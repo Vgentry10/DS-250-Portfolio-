@@ -1,0 +1,44 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DS250 Submission Screenshot</title>
+<style>
+body { font-family: Georgia, serif; margin: 28px; background: #f7f7f3; color: #1f2937; }
+h1 { margin: 0 0 8px 0; }
+.card { background: white; border: 1px solid #d1d5db; border-radius: 12px; padding: 18px; margin: 14px 0; }
+pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow-x: auto; font-family: Consolas, monospace; font-size: 12px; }
+img { width: 100%; max-width: 980px; border: 1px solid #d1d5db; border-radius: 10px; }
+small { color: #4b5563; }
+</style></head>
+<body>
+<h1>DS 250 - Project 0</h1>
+<small>Test 1,2,3</small>
+<div class="card"><h2>Code Used</h2><pre>from lets_plot import *
+from palmerpenguins import load_penguins
+
+LetsPlot.setup_html()
+penguins = load_penguins()
+penguins
+penguins.head()
+
+(
+  ggplot(data=penguins, mapping=aes(x=&quot;flipper_length_mm&quot;, y=&quot;body_mass_g&quot;))
+  + geom_point(aes(color=&quot;species&quot;, shape=&quot;species&quot;))
+  + geom_smooth(method=&quot;lm&quot;)
+  + labs(
+    title=&quot;Body mass and flipper length&quot;,
+    subtitle=&quot;Dimensions for Adelie, Chinstrap, and Gentoo Penguins&quot;,
+    x=&quot;Flipper length (mm)&quot;,
+    y=&quot;Body mass (g)&quot;,
+    color=&quot;Species&quot;,
+    shape=&quot;Species&quot;,
+  )
+)
+
+</pre></div>
+<div class="card"><h2>Output: Data Preview</h2><p>Rows x Columns: 344 x 8</p><pre>  species     island  bill_length_mm  bill_depth_mm  flipper_length_mm  body_mass_g     sex  year
+0  Adelie  Torgersen            39.1           18.7              181.0       3750.0    male  2007
+1  Adelie  Torgersen            39.5           17.4              186.0       3800.0  female  2007
+2  Adelie  Torgersen            40.3           18.0              195.0       3250.0  female  2007
+3  Adelie  Torgersen             NaN            NaN                NaN          NaN     NaN  2007
+4  Adelie  Torgersen            36.7           19.3              193.0       3450.0  female  2007</pre></div>
+<div class="card"><h2>Output: Final Plot</h2><img src="lets-plot-images/penguin_plot.svg" alt="Penguin plot"></div>
+</body></html>
