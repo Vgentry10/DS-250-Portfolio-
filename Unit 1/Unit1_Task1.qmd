@@ -1,0 +1,196 @@
+---
+title: "Client Report - Unit 1 Task 1: Exploring Names"
+subtitle: "Course DS 250"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+      source: false
+      toggle: true
+      caption: See code
+execute:
+  warning: false
+
+---
+
+```{python}
+import polars as pl
+from lets_plot import *
+
+LetsPlot.setup_html()
+
+# Primary yearly dataset used for most questions
+url_year = "https://github.com/byuidatascience/data4names/raw/master/data-raw/names_year/names_year.csv"
+# Probability dataset used to estimate female usage by name
+url_prob = "https://github.com/byuidatascience/data4names/raw/master/data-raw/names_prob/names_prob.csv"
+
+names_year = pl.read_csv(url_year, ignore_errors=True)
+names_prob = pl.read_csv(url_prob, ignore_errors=True)
+
+names_year.head()
+```
+
+## Client Request: Name Trends Over Time
+
+__How has usage changed over time for Mary, Martha, Peter, Paul, and a famous movie name (Elsa)?__
+
+```{python}
+focus_names = ["Mary", "Martha", "Peter", "Paul", "Elsa"]
+
+focus_trends = (
+    names_year
+    .filter(pl.col("name").is_in(focus_names))
+    .select(["name", "year", "Total"])
+    .sort(["name", "year"])
+)
+
+focus_trends.head(10)
+```
+
+```{python}
+(
+    ggplot(focus_trends, aes(x="year", y="Total", color="name"))
+    + geom_line(size=1)
+    + labs(
+        title="Usage Over Time for Selected Names",
+        x="Year",
+        y="Number of Babies"
+    )
+)
+```
+
+_The trend chart shows that long-established names like Mary, Martha, Peter, and Paul appear across many decades, while Elsa shows a more modern pattern._
+
+## QUESTION|TASK 1
+
+__What was the earliest year that the name 'Felisha' was used?__
+
+```{python}
+felisha = names_year.filter(pl.col("name") == "Felisha")
+earliest_year = felisha.select(pl.col("year").min()).item()
+
+print(f"Earliest year 'Felisha' was used: {earliest_year}")
+felisha.sort("year").head(5)
+```
+
+_The earliest year that the name Felisha appeared in this dataset was **`{python} earliest_year`**._
+
+## QUESTION|TASK 2
+
+__What year had the most babies named 'David'? How many babies were named 'David' that year?__
+
+```{python}
+david_by_year = (
+    names_year
+    .filter(pl.col("name") == "David")
+    .group_by("year")
+    .agg(pl.col("Total").sum().alias("total_count"))
+    .sort("total_count", descending=True)
+)
+
+peak_year_david = david_by_year.row(0)[0]
+peak_count_david = david_by_year.row(0)[1]
+
+print(f"Peak year for David: {peak_year_david} with {peak_count_david:,} babies")
+david_by_year.head(5)
+```
+
+```{python}
+(
+    ggplot(david_by_year.sort("year"), aes(x="year", y="total_count"))
+    + geom_line(color="#1f77b4", size=1)
+    + geom_vline(xintercept=peak_year_david, linetype="dashed", color="red")
+    + labs(
+        title="Babies Named David by Year",
+        x="Year",
+        y="Number of Babies"
+    )
+)
+```
+
+_The year with the highest number of babies named David was **`{python} peak_year_david`**, with **`{python} f"{peak_count_david:,}"`** babies._
+
+## QUESTION|TASK 3
+
+__What year did your name hit its peak? How many babies were named your name in that year?__
+
+```{python}
+my_name = "Vincent"
+
+my_name_by_year = (
+    names_year
+    .filter(pl.col("name") == my_name)
+    .group_by("year")
+    .agg(pl.col("Total").sum().alias("total_count"))
+    .sort("total_count", descending=True)
+)
+
+my_peak_year = my_name_by_year.row(0)[0]
+my_peak_count = my_name_by_year.row(0)[1]
+
+print(f"Peak year for {my_name}: {my_peak_year} with {my_peak_count:,} babies")
+my_name_by_year.head(5)
+```
+
+```{python}
+(
+    ggplot(my_name_by_year.sort("year"), aes(x="year", y="total_count"))
+    + geom_line(color="#2ca02c", size=1)
+    + geom_vline(xintercept=my_peak_year, linetype="dashed", color="red")
+    + labs(
+        title=f"Babies Named {my_name} by Year",
+        x="Year",
+        y="Number of Babies"
+    )
+)
+```
+
+_The peak year for my name, Vincent, was **`{python} my_peak_year`**, with **`{python} f"{my_peak_count:,}"`** babies._
+
+## QUESTION|TASK 4
+
+__In the most recent year of data, what was the most common female name in Utah?__
+
+```{python}
+# names_year is a wide table with no sex-by-year column.
+# Estimate female Utah counts using prob_female from names_prob.
+most_recent_year = names_year.select(pl.col("year").max()).item()
+
+utah_female_est = (
+    names_year
+    .filter((pl.col("year") == most_recent_year) & pl.col("UT").is_not_null())
+    .select(["name", "UT"])
+    .join(
+        names_prob.select(["name", "prob_female"]),
+        on="name",
+        how="left"
+    )
+    .with_columns(
+        (pl.col("UT") * pl.col("prob_female").fill_null(0.0)).alias("estimated_female_ut")
+    )
+    .sort("estimated_female_ut", descending=True)
+    .select(["name", "estimated_female_ut"])
+    .head(10)
+)
+
+top_female_name_ut = utah_female_est.row(0)[0]
+top_female_count_ut = utah_female_est.row(0)[1]
+
+print(f"Most recent year in data: {most_recent_year}")
+print(f"Top female name in Utah (estimated): {top_female_name_ut} ({top_female_count_ut:,.0f})")
+utah_female_est
+```
+
+_In **`{python} most_recent_year`**, the most common female name in Utah was estimated to be **`{python} top_female_name_ut`**, with about **`{python} f"{top_female_count_ut:,.0f}"`** babies._
