@@ -1,0 +1,180 @@
+---
+title: "Client Report - What's in a Name?"
+subtitle: "Unit 1 Task 2"
+author: "[STUDENT NAME]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+from lets_plot import *
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+```{python}
+# Learn morea about Code Cells: https://quarto.org/docs/reference/cells/cells-jupyter.html
+
+# Include and execute your code here
+df = pl.read_csv("https://posit.byui.edu/content/0d43d66f-d3b7-4c43-8c36-52e3ed69e7f1/names_year_csv.csv")
+
+# Keep only the columns we need for this report.
+names = (
+  df
+  .select(["name", "year", "Total"])
+  .with_columns(
+    pl.col("name").str.to_titlecase(),
+    pl.col("year").cast(pl.Int64),
+    pl.col("Total").cast(pl.Int64)
+  )
+  .rename({"Total": "count"})
+)
+```
+
+## QUESTION 1
+
+<!-- Make sure at least one of your charts includes reference marks!! -->
+
+__How does your name at your birth year compare to its use historically? Your must provide a chart. The years labels on your charts should not include a comma.__ 
+
+For this report, I used the name Vincent and birth year 2005. In 2005, Vincent was given 3,737 times, while its historical peak was 6,162 in 1962. That means my birth-year usage is substantial but clearly below the mid-century high, suggesting the name remained popular but had declined from its peak.
+
+```{python}
+# Q1
+my_name = "Vincent"
+birth_year = 2005
+
+q1 = (
+  names
+  .filter(pl.col("name") == my_name)
+  .sort("year")
+)
+
+birth_row = q1.filter(pl.col("year") == birth_year)
+birth_count = int(birth_row["count"][0]) if birth_row.height > 0 else 0
+
+peak_row = q1.sort("count", descending=True).head(1)
+peak_year = int(peak_row["year"][0])
+peak_count = int(peak_row["count"][0])
+
+ggplot(q1, aes(x="year", y="count")) + \
+  geom_line(color="#1f77b4", size=1.0) + \
+  geom_point(data=q1.filter(pl.col("year") == birth_year), color="#d62728", size=3) + \
+  labs(
+    title=f"Historical U.S. Usage of the Name {my_name}",
+    subtitle=f"Birth year ({birth_year}) count: {birth_count}; all-time peak: {peak_count} in {peak_year}",
+    x="Year",
+    y="Number of Babies Given Name"
+  ) + \
+  scale_x_continuous(format=".0f") + \
+  theme_minimal()
+
+
+```
+
+
+## QUESTION 2
+
+__Think of a unique name from a famous movie. Plot the usage of that name and see how changes line up with the movie release. Does it look like the movie had an effect on usage?__  
+
+I chose **Anakin** from *Star Wars: Episode I – The Phantom Menace* (1999). 
+The chart shows very low usage before 1999, followed by a clear jump and a higher sustained level afterward. 
+This timing strongly suggests the movie release affected how often the name was chosen.
+
+```{python}
+# Q2
+movie_name = "Anakin"
+release_year = 1999
+
+q2 = (
+  names
+  .filter(pl.col("name") == movie_name)
+  .sort("year")
+)
+
+label_df = pl.DataFrame({
+  "x": [release_year + 2],
+  "y": [int(q2["count"].max() * 0.85)],
+  "label": ["Movie release (1999)"]
+})
+
+ggplot(q2, aes(x="year", y="count")) + \
+  geom_line(color="#2ca02c", size=1.1) + \
+  geom_vline(xintercept=release_year, linetype="dashed", color="#d62728", size=1) + \
+  geom_text(
+    data=label_df,
+    mapping=aes(x="x", y="y", label="label"),
+    color="#d62728",
+    size=10
+  ) + \
+  labs(
+    title=f"Usage of the Name {movie_name} Over Time",
+    subtitle="Reference mark shows the movie release year",
+    x="Year",
+    y="Number of Babies Given Name"
+  ) + \
+  scale_x_continuous(format=".0f") + \
+  theme_minimal()
+
+
+```
+
+## QUESTION 3
+
+__Mary, Martha, Peter, and Paul are all Christian names. From 1920 - 2000, compare the name usage of each of the four names in a single chart. What trends do you notice?__  
+
+From 1920 to 2000, Mary starts far above the other three names and then drops sharply over time. Martha, Peter, and Paul also decline overall, 
+but with smaller counts and less dramatic slopes than Mary. 
+The main trend is broad long-run decline across all four names,
+ with Mary showing the biggest historical shift.
+
+```{python}
+# Q3
+target_names = ["Mary", "Martha", "Peter", "Paul"]
+
+q3 = (
+  names
+  .filter(
+    pl.col("name").is_in(target_names),
+    pl.col("year") >= 1920,
+    pl.col("year") <= 2000
+  )
+  .sort(["name", "year"])
+)
+
+ggplot(q3, aes(x="year", y="count", color="name")) + \
+  geom_line(size=1) + \
+  labs(
+    title="Christian Name Usage in the U.S. (1920-2000)",
+    subtitle="Mary, Martha, Peter, and Paul",
+    x="Year",
+    y="Number of Babies Given Name",
+    color="Name"
+  ) + \
+  scale_x_continuous(format=".0f") + \
+  theme_minimal()
+
+
+```
+<!-- Make sure at least one of your charts includes reference marks!! -->
