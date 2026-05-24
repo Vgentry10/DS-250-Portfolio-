@@ -1,0 +1,155 @@
+---
+title: "Client Report - Flights: Column Aggregation"
+subtitle: "Unit 2 Task 2"
+author: "[STUDENT NAME]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import requests
+import io
+import pandas as pd
+from lets_plot import *
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+
+```{python}
+# Load and clean the airport delay data.
+url = "https://raw.githubusercontent.com/byuidatascience/data4missing/master/data-raw/flights_missing/flights_missing.json"
+response = requests.get(url)
+df = pl.read_json(io.BytesIO(response.content))
+
+airport_lookup = (
+  df.filter(pl.col("airport_name") != "")
+  .select(["airport_code", "airport_name"])
+  .unique(subset=["airport_code"], keep="first")
+)
+
+clean = (
+  df.filter(pl.col("year").is_not_null())
+  .with_columns(
+    pl.when(pl.col("month") == "Febuary")
+    .then(pl.lit("February"))
+    .otherwise(pl.col("month"))
+    .alias("month")
+  )
+  .join(airport_lookup, on="airport_code", how="left", suffix="_lookup")
+  .with_columns(pl.coalesce([pl.col("airport_name_lookup"), pl.col("airport_name")]).alias("airport_name"))
+  .drop("airport_name_lookup")
+)
+
+airport_year_counts = (
+  clean.group_by(["airport_code", "airport_name", "year"])
+  .agg(pl.len().alias("sample_size"))
+  .sort(["airport_code", "year"])
+)
+
+airport_summary = (
+  clean.group_by(["airport_code", "airport_name"])
+  .agg(
+    pl.col("num_of_flights_total").sum().alias("total_flights"),
+    pl.col("num_of_delays_total").sum().alias("total_delayed_flights"),
+    (pl.col("num_of_delays_total").sum() / pl.col("num_of_flights_total").sum()).alias("proportion_delayed"),
+    (pl.col("minutes_delayed_total").sum() / pl.col("num_of_delays_total").sum() / 60).alias("avg_delay_hours"),
+  )
+  .sort("proportion_delayed", descending=True)
+)
+
+month_summary = (
+  clean.filter(pl.col("month") != "n/a")
+  .group_by("month")
+  .agg(
+    pl.col("num_of_flights_total").sum().alias("total_flights"),
+    pl.col("num_of_delays_total").sum().alias("total_delayed_flights"),
+    (pl.col("num_of_delays_total").sum() / pl.col("num_of_flights_total").sum()).alias("proportion_delayed"),
+  )
+  .sort("proportion_delayed")
+)
+```
+
+The dataset needed a little cleaning before I could use it. I removed rows with a missing year, fixed the misspelled month name `Febuary`, and filled in the blank airport names using the airport code. After that, I had 901 usable rows.
+
+
+## QUESTION 1
+
+__Calculate the sample size (i.e. number of rows in the dataset) for each airport in each year__. What do you notice?
+
+Most airports have 12 rows for each year, so their data looks complete. Atlanta is different because some years only have 9 to 11 rows, which means a few months are missing there.
+
+```{python}
+airport_year_counts
+
+```
+
+## QUESTION 2
+
+__Which airport has the worst delays?__ Describe the metric you chose, and why you chose it to determine the “worst” airport. Your answer should include a summary table that lists (for each airport) the total number of flights, total number of delayed flights, proportion of delayed flights, and average delay time in hours. 
+
+I used the proportion of delayed flights because it is easier to compare airports that have different numbers of flights. A bigger airport can have more delayed flights just because it has more total flights, so the percentage is more fair. By that metric, San Francisco looks the worst because about 26.1% of its flights were delayed. Chicago O'Hare had the most delayed flights total, but not the highest delay rate.
+
+```{python}
+airport_summary.select([
+  "airport_code",
+  "airport_name",
+  "total_flights",
+  "total_delayed_flights",
+  pl.col("proportion_delayed").round(3),
+  pl.col("avg_delay_hours").round(2),
+])
+
+```
+
+## QUESTION 3
+
+__Create a barplot showing the proportion of all flights that are delayed at each airport. Describe what you learn from this graph.__  
+
+The bar chart shows the same pattern as the table. San Francisco has the highest delay rate, and Salt Lake City has the lowest. So if I had to pick the most reliable airport from this set, I would pick Salt Lake City. Based on the month summary, September is the best month to fly if you want the lowest chance of any delay.
+
+```{python}
+airport_plot_df = pd.DataFrame(
+  airport_summary.select([
+    "airport_name",
+    "proportion_delayed",
+  ])
+  .sort("proportion_delayed")
+  .to_dicts()
+)
+airport_plot_df["label"] = airport_plot_df["proportion_delayed"].map(lambda value: f"{value:.1%}")
+
+(
+  ggplot(airport_plot_df, aes(x="airport_name", y="proportion_delayed"))
+  + geom_bar(stat="identity", fill="#0f766e")
+  + geom_text(aes(label="label"), hjust=-0.08, size=9)
+  + coord_flip()
+  + labs(
+    title="Share of Flights Delayed by Airport",
+    x="",
+    y="Proportion of flights delayed",
+  )
+  + ggsize(900, 500)
+)
+
+```
