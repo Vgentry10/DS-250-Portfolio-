@@ -1,0 +1,225 @@
+---
+title: "Client Report - Flights: Delay Causes (Simple Version)"
+subtitle: "Unit 2 Task 3"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+      source: false
+      toggle: true
+      caption: See code
+execute:
+  warning: false
+---
+
+## Goal
+
+In this report, I answer 2 simple questions:
+
+1. Which delay type is worst: Carrier, Security, or Late Aircraft?
+2. How do those 3 delay types compare across all 7 airports?
+
+```{python}
+import io
+import requests
+import polars as pl
+from lets_plot import *
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+```{python}
+# Step 1: Load data.
+url = "https://raw.githubusercontent.com/byuidatascience/data4missing/master/data-raw/flights_missing/flights_missing.json"
+response = requests.get(url)
+raw = pl.read_json(io.BytesIO(response.content))
+
+# Step 2: Build a simple airport code -> airport name lookup.
+airport_lookup = (
+    raw
+    .filter(pl.col("airport_name") != "")
+    .select(["airport_code", "airport_name"])
+    .unique(subset=["airport_code"], keep="first")
+)
+
+# Step 3: Keep usable rows and fix obvious text issues.
+base = raw.filter(pl.col("year").is_not_null())
+base = base.with_columns(
+    pl.when(pl.col("month") == "Febuary")
+    .then(pl.lit("February"))
+    .otherwise(pl.col("month"))
+    .alias("month")
+)
+
+# Step 4: Fill missing airport names from lookup.
+base = (
+    base
+    .join(airport_lookup, on="airport_code", how="left", suffix="_lookup")
+    .with_columns(
+        pl.coalesce([pl.col("airport_name_lookup"), pl.col("airport_name")]).alias("airport_name")
+    )
+    .drop("airport_name_lookup")
+)
+
+# Step 5: Convert needed columns to numeric and remove month = n/a.
+clean = (
+    base
+    .with_columns(
+        pl.col("num_of_flights_total").cast(pl.Float64, strict=False),
+        pl.col("num_of_delays_total").cast(pl.Float64, strict=False),
+        pl.col("num_of_delays_carrier").cast(pl.Float64, strict=False),
+        pl.col("num_of_delays_security").cast(pl.Float64, strict=False),
+        pl.col("num_of_delays_late_aircraft").cast(pl.Float64, strict=False),
+    )
+    .filter(pl.col("month") != "n/a")
+)
+
+# Keep only rows that have values for this assignment.
+reason_cols = [
+    "num_of_delays_carrier",
+    "num_of_delays_security",
+    "num_of_delays_late_aircraft",
+]
+
+analysis = clean.filter(
+    pl.col("num_of_flights_total").is_not_null()
+    & pl.col("num_of_delays_total").is_not_null()
+    & pl.all_horizontal([pl.col(c).is_not_null() for c in reason_cols])
+)
+
+analysis.select([
+    "airport_code",
+    "airport_name",
+    "month",
+    "num_of_flights_total",
+    "num_of_delays_total",
+    *reason_cols,
+]).head(5)
+```
+
+## Question 1: Which delay is worst?
+
+I compare each delay type using:
+
+$$
+\text{delay share} = \frac{\text{delays for that reason}}{\text{all flights}}
+$$
+
+```{python}
+# Convert 3 delay columns into one "reason" column and one "delay_count" column.
+reason_map = {
+    "num_of_delays_carrier": "Carrier",
+    "num_of_delays_security": "Security",
+    "num_of_delays_late_aircraft": "Late Aircraft",
+}
+
+delay_long = (
+    analysis
+    .unpivot(
+        index=["airport_code", "airport_name", "year", "month", "num_of_flights_total"],
+        on=reason_cols,
+        variable_name="reason_key",
+        value_name="delay_count",
+    )
+    .with_columns(pl.col("reason_key").replace_strict(reason_map).alias("reason"))
+    .drop("reason_key")
+)
+
+# Build table for the 3 delay types.
+total_flights = analysis.select(pl.sum("num_of_flights_total").alias("total")).item()
+
+overall_reason_table = (
+    delay_long
+    .group_by("reason")
+    .agg(pl.sum("delay_count").alias("total_delays"))
+    .with_columns((pl.col("total_delays") / total_flights).alias("delay_share"))
+    .with_columns(pl.col("delay_share").round(4))
+    .sort("delay_share", descending=True)
+)
+
+overall_reason_table
+```
+
+```{python}
+# Chart for Question 1.
+overall_plot_df = {
+    "reason": overall_reason_table["reason"].to_list(),
+    "delay_share": overall_reason_table["delay_share"].to_list(),
+    "label": [f"{x:.2%}" for x in overall_reason_table["delay_share"].to_list()],
+}
+
+(
+    ggplot(overall_plot_df, aes(x="reason", y="delay_share"))
+    + geom_bar(stat="identity", fill="#0f766e")
+    + geom_text(aes(label="label"), nudge_y=0.0025, size=9)
+    + labs(
+        title="Delay Share by Cause",
+        x="Delay cause",
+        y="Share of all flights",
+    )
+    + ggsize(850, 450)
+)
+```
+
+Result: Late Aircraft is highest, Carrier is second, and Security is much smaller.
+
+## Question 2: Delay mix at each airport
+
+Now I compare those same 3 reasons inside each airport.
+
+```{python}
+# Table: for each airport, what share of delays comes from each reason?
+airport_reason_table = (
+    delay_long
+    .group_by(["airport_code", "airport_name", "reason"])
+    .agg(pl.sum("delay_count").alias("total_delays"))
+    .with_columns(
+        (
+            pl.col("total_delays")
+            / pl.col("total_delays").sum().over(["airport_code", "airport_name"])
+        ).alias("reason_proportion")
+    )
+    .with_columns(pl.col("reason_proportion").round(4))
+    .sort(["airport_code", "reason"])
+)
+
+airport_reason_table
+```
+
+```{python}
+# Stacked bar chart across airports.
+airport_plot_df = {
+    "airport": airport_reason_table["airport_code"].to_list(),
+    "reason": airport_reason_table["reason"].to_list(),
+    "reason_proportion": airport_reason_table["reason_proportion"].to_list(),
+}
+
+(
+    ggplot(airport_plot_df, aes(x="airport", y="reason_proportion", fill="reason"))
+    + geom_bar(stat="identity")
+    + scale_y_continuous(labels="percent")
+    + labs(
+        title="Delay Cause Mix by Airport",
+        x="Airport",
+        y="Share of delays",
+        fill="Delay cause",
+    )
+    + ggsize(950, 500)
+)
+```
+
+Result: Late Aircraft is the largest piece at every airport. Carrier is second. Security stays very small.
+
+
