@@ -1,0 +1,108 @@
+---
+title: "Client Report - Baseball Database SQL Query"
+subtitle: "Unit 3 Task 2"
+author: "[STUDENT NAME]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+
+```{python}
+import polars as pl
+import numpy as np
+import sqlite3
+from lets_plot import *
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+
+```{python}
+# Learn morea about Code Cells: https://quarto.org/docs/reference/cells/cells-jupyter.html
+
+# Include and execute your code here
+sqlite_file = 'lahmansbaseballdb.sqlite'
+# this file must be in the same location as your .qmd or .py file
+con = sqlite3.connect(sqlite_file)
+```
+
+## QUESTION 1
+
+__Write an SQL query that provides playerID, yearID, and batting average for players with at least 1 at bat that year. Sort the table from highest batting average to lowest, and then by playerid alphabetically. Show the top 5 results in your report.__
+
+With only 1 at bat required, the top 5 results all show a perfect batting average of 1.000. This means that every at bat resulted in a hit. This is expected since a player who had just 1 at bat and got a hit would have a 1.0 average. 
+These results show a limitation of small sample sizes, making a single lucky at bat inflate the average to the maximum possible value, a 100% batting average. 
+
+```{python}
+# Include and execute your code here
+q = """
+    SELECT playerID, yearID, CAST(H AS REAL) / AB AS batting_avg
+    FROM Batting
+    WHERE AB >= 1
+    ORDER BY batting_avg DESC, playerID ASC
+    LIMIT 5
+    """
+results = pl.read_database(q, con)
+results
+```
+
+
+## QUESTION 2
+
+__Use the same query as above, but only include players with at least 10 at bats that year. Print the top 5 results.__  
+
+Raising the minimum to 10 at bats removes the extreme outliers seen in Question 1, but the top 5 still show batting averages of 1.000. While its rare, players with 10 perfect at bats in a season are not impossible. The stricter filter begins to produce more meaningful result even though the sample size is still small enough to allow perfect or near-perfect averages.
+
+```{python}
+# Include and execute your code here
+q2 = """
+    SELECT playerID, yearID, CAST(H AS REAL) / AB AS batting_avg
+    FROM Batting
+    WHERE AB >= 10
+    ORDER BY batting_avg DESC, playerID ASC
+    LIMIT 5
+    """
+results2 = pl.read_database(q2, con)
+results2
+```
+
+
+## QUESTION 3
+
+__Now modify the SQL query to calculate the batting average for players over their entire careers (all years combined). Only include players with at least 100 at bats over their entire career, and print the top 5 results.__
+
+Aggregating across an entire career with a minimum of 100 at bats produces far more realistic batting averages. The top career batting averages become around 0.35–0.44, which aligns with historically elite hitters. This result is the most statistically meaningful of the three because the large sample size (100+ career at bats) smooths out single-season luck and reflects true hitting ability over time.
+
+```{python}
+# Include and execute your code here
+q3 = """
+    SELECT playerID,
+           CAST(SUM(H) AS REAL) / SUM(AB) AS career_batting_avg
+    FROM Batting
+    GROUP BY playerID
+    HAVING SUM(AB) >= 100
+    ORDER BY career_batting_avg DESC, playerID ASC
+    LIMIT 5
+    """
+results3 = pl.read_database(q3, con)
+results3
+```
