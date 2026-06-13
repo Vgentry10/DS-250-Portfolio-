@@ -1,0 +1,115 @@
+---
+title: "Client Report - Joins"
+subtitle: "Unit 3 Task 3"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+import sqlite3
+from lets_plot import *
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+
+```{python}
+sqlite_file = 'lahmansbaseballdb.sqlite'
+con = sqlite3.connect(sqlite_file)
+```
+
+## QUESTION 1
+
+__Write an SQL query that pulls in the the salaries table and the collegeplaying table (and any other tables you might need) and store them in polars dataframes. In Python Polars, combine the dataframes to create a list of baseball players who attended BYU-Idaho. The new table should contain five columns: playerID, schoolID, salary, yearID and teamID associated with each salary.__
+
+I pulled the `collegeplaying` and `salaries` tables separately, then used a left join on `playerID` to connect them. 
+A left join keeps every BYU-Idaho player even if they don't have a matching salary record, 
+which is why some rows show null values. The result shows there are only a few players who attended BYU-Idaho and made it to the MLB.
+
+```{python}
+collegeplaying = pl.read_database(
+    "SELECT playerID, schoolID FROM collegeplaying WHERE schoolID = 'idbyuid'",
+    con
+)
+salaries = pl.read_database(
+    "SELECT playerID, yearID, teamID, salary FROM salaries",
+    con
+)
+
+byuid_players = (
+    collegeplaying
+    .join(salaries, on="playerID", how="left")
+    .select(["playerID", "schoolID", "salary", "yearID", "teamID"])
+    .sort("playerID")
+)
+
+byuid_players
+```
+
+
+## QUESTION 2
+
+1. Pick any two baseball teams and compare them using a metric of your choice (average salary, home runs, number of wins, etc). Be creative! Write an SQL query to read in the table(s) you need, then use polars to manipulate the data. Finally, make a graph using Lets-Plot to visualize the comparison. What do you learn?
+
+I compared the New York Yankees and LA Dodgers by looking at their average player salary over time. 
+The Yankees spent a lot more than the Dodgers for most of the 1990s and 2000s. 
+Around 2012 the Dodgers started spending a lot more and eventually caught up. 
+It was interesting to see how two teams can have such different spending patterns over the years.
+
+```{python}
+team_salaries = pl.read_database(
+    "SELECT teamID, yearID, salary FROM salaries WHERE teamID IN ('NYA', 'LAN')",
+    con
+)
+
+avg_salary = (
+    team_salaries
+    .group_by(["teamID", "yearID"])
+    .agg(pl.mean("salary").alias("avg_salary"))
+    .sort(["yearID", "teamID"])
+)
+
+plot_data = {
+    "teamID": avg_salary["teamID"].to_list(),
+    "yearID": avg_salary["yearID"].to_list(),
+    "avg_salary": avg_salary["avg_salary"].to_list(),
+}
+
+(
+    ggplot(plot_data, aes(x="yearID", y="avg_salary", color="teamID"))
+    + geom_line(size=1.2)
+    + geom_point(size=2)
+    + scale_x_continuous(format="{d}")
+    + labs(
+        title="Average Player Salary: New York Yankees vs LA Dodgers (1985–2016)",
+        x="Year",
+        y="Average Salary (USD)",
+        color="Team",
+    )
+    + theme_classic()
+)
+```
+
+

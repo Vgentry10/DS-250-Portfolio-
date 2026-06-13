@@ -209,7 +209,7 @@ airport_plot_df = {
 (
     ggplot(airport_plot_df, aes(x="airport", y="reason_proportion", fill="reason"))
     + geom_bar(stat="identity")
-    + scale_y_continuous(labels="percent")
+    + scale_y_continuous(format="{.0%}")
     + labs(
         title="Delay Cause Mix by Airport",
         x="Airport",
