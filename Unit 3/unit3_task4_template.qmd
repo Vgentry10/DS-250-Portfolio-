@@ -1,0 +1,133 @@
+---
+title: "Client Report - Baseball Relationships"
+subtitle: "Unit 3 Task 4"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import sqlite3
+
+sqlite_file = 'lahmansbaseballdb.sqlite'
+con = sqlite3.connect(sqlite_file)
+```
+
+## QUESTION 1
+
+__Identify the top 10 players with the longest Major League Baseball careers.__
+
+To figure out how long each player's career was, I used the `appearances` table since it has a row for every season a player showed up. I grouped by `playerID` and found the earliest and latest year they played, then just subtracted to get the career length. I also added 1 so that a player who only played in one year still shows up as 1 instead of 0. Then I joined in the `people` table to get their actual names.
+
+Looking at the results, it's cool to see how long some of these guys played. A lot of the top careers belong to pitchers, which I didn't really expect. Nolan Ryan had the longest career in the data at 27 seasons, which is pretty incredible.
+
+```{python}
+people = pl.read_database(
+    "SELECT playerID, nameFirst, nameLast FROM people",
+    con
+)
+
+appearances = pl.read_database(
+    "SELECT playerID, yearID FROM appearances",
+    con
+)
+
+top10_careers = (
+    appearances
+    .group_by("playerID")
+    .agg([
+        pl.min("yearID").alias("start_year"),
+        pl.max("yearID").alias("end_year"),
+    ])
+    .with_columns(
+        (pl.col("end_year") - pl.col("start_year") + 1).alias("career_length")
+    )
+    .join(people, on="playerID", how="left")
+    .rename({"nameFirst": "first_name", "nameLast": "last_name"})
+    .select(["playerID", "first_name", "last_name", "career_length"])
+    .sort("career_length", descending=True)
+    .head(10)
+)
+
+top10_careers
+```
+
+## QUESTION 2
+
+__Show the average salary for each position, including total players and highest salary. Label salaries as High, Medium, or Low.__
+
+**How I handled players at multiple positions in a single year:**  
+One tricky part was that some players play more than one position in the same season, but they only have one salary. I didn't want to count that salary multiple times or just pick randomly, so I decided to go with whichever position they played the most games at. That way the salary gets counted toward the position they spent the most time at, which feels like the most fair way to do it. I sorted the fielding table by games played and then grabbed the first row for each player-year to get their main position.
+
+```{python}
+fielding = pl.read_database(
+    "SELECT playerID, yearID, POS, G FROM fielding",
+    con
+)
+
+salaries = pl.read_database(
+    "SELECT playerID, yearID, salary FROM salaries",
+    con
+)
+
+# Keep the position with the most games played for each player-year
+primary_position = (
+    fielding
+    .sort(["playerID", "yearID", "G"], descending=[False, False, True])
+    .unique(subset=["playerID", "yearID"], keep="first")
+    .select(["playerID", "yearID", "POS"])
+)
+
+# Join salaries to primary position
+salary_by_pos = (
+    salaries
+    .join(primary_position, on=["playerID", "yearID"], how="left")
+    .drop_nulls("POS")
+)
+
+# Build summary table
+position_summary = (
+    salary_by_pos
+    .group_by("POS")
+    .agg([
+        pl.mean("salary").alias("average_salary"),
+        pl.n_unique("playerID").alias("total_players"),
+        pl.max("salary").alias("highest_salary"),
+    ])
+    .rename({"POS": "position"})
+    .with_columns(
+        pl.when(pl.col("average_salary") > 3_000_000)
+        .then(pl.lit("High Salary"))
+        .when(pl.col("average_salary") > 2_000_000)
+        .then(pl.lit("Medium Salary"))
+        .otherwise(pl.lit("Low Salary"))
+        .alias("salary_label")
+    )
+    .sort("average_salary", descending=True)
+)
+
+position_summary
+```
+
+**Summary:**  
+Looking at the results, there's a pretty clear difference in pay depending on what position you play. Designated hitters and first basemen are near the top, which makes sense because those spots are usually filled by big hitters who bring a lot of offense. Some of the positions I expected to be high, like catcher, were actually on the lower end, which surprised me a bit. Most positions ended up in the "Low Salary" category, which shows that only a few positions really pull in the big money. Overall it was interesting to see how much position can affect what a player gets paid.
