@@ -1,8 +1,12 @@
-import pandas as pd
-import numpy as np
-from lets_plot import *
-LetsPlot.setup_html(isolated_frame=True)
-df = pd.read_json("https://github.com/byuidatascience/data4missing/raw/master/data-raw/flights_missing/flights_missing.json")
+# %%
 
+# must have the .sqlite file in the exact same folder or list your entire path to the file.
 
-print(df.isna().sum())
+sqlite_file = 'lahmansbaseballdb.sqlite'
+
+con = sqlite3.connect(sqlite_file)
+
+q = '''
+SELECT * FROM batting LIMIT 2
+'''
+qr = pd.read_sql_query(q,con)

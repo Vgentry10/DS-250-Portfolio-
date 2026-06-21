@@ -1,0 +1,129 @@
+---
+title: "Client Report - Can You Predict That?"
+subtitle: "Unit 4 Task 1"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+from lets_plot import *
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.ensemble import RandomForestClassifier
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+
+```{python}
+url = "https://github.com/byuidatascience/data4dwellings/raw/master/data-raw/dwellings_ml/dwellings_ml.csv"
+dwellings = pl.read_csv(url)
+dwellings.head()
+```
+
+## QUESTION
+
+1. __Take time to get to know your data.__ Based on some initial exploration, identify 3 variables in the dataset you think will have strong predictive ability for determining if a house was built before 1980. Explain/justify the reasoning behind your guesses (for example with plots).
+
+I looked at the data and picked three variables that seemed like they would be good at telling old homes from newer ones:
+
+- **`livearea`**: Older homes are just smaller. Homes built before 1980 average about 1,290 sq ft, while newer homes are closer to 1,880 sq ft.
+- **`arcstyle_ONE-STORY`**: Most old homes are one-story. Over half of pre-1980 homes are one-story but only about 6% of newer homes are.
+- **`sprice`**: Older homes sold for a lot less. The average sale price for a pre-1980 home was around $246K compared to over $1M for newer homes.
+
+```{python}
+era_label = ["Before 1980" if v == 1 else "1980 or Later" for v in dwellings["before1980"].to_list()]
+
+# Plot 1: livearea by era
+p1 = (
+    ggplot(
+        {"livearea": dwellings["livearea"].to_list(), "era": era_label},
+        aes(x="era", y="livearea", fill="era")
+    )
+    + geom_boxplot(outlier_size=1)
+    + labs(x="Era", y="Living Area (sq ft)", title="Living Area by Construction Era")
+    + theme(legend_position="none")
+)
+
+# Plot 2: proportion of one-story homes by era
+p2 = (
+    ggplot(
+        {
+            "era": ["Before 1980", "1980 or Later"],
+            "pct": [
+                dwellings.filter(pl.col("before1980") == 1)["arcstyle_ONE-STORY"].mean(),
+                dwellings.filter(pl.col("before1980") == 0)["arcstyle_ONE-STORY"].mean(),
+            ],
+        },
+        aes(x="era", y="pct", fill="era")
+    )
+    + geom_bar(stat="identity")
+    + scale_y_continuous(limits=[0, 1])
+    + labs(x="Era", y="Proportion One-Story", title="One-Story Homes by Construction Era")
+    + theme(legend_position="none")
+)
+
+# Plot 3: sale price by era
+p3 = (
+    ggplot(
+        {"sprice": dwellings["sprice"].to_list(), "era": era_label},
+        aes(x="era", y="sprice", fill="era")
+    )
+    + geom_boxplot(outlier_size=1)
+    + labs(x="Era", y="Sale Price ($)", title="Sale Price by Construction Era")
+    + theme(legend_position="none")
+)
+
+gggrid([p1, p2, p3], ncol=3)
+```
+
+1. __Build a classification model labeling houses as being built "before 1980" or "during or after 1980".__ Your goal is to reach or exceed 90% accuracy. Report your final model choice and any other model parameters you may have tweaked (train-test split ratio, tuning parameters, etc).
+
+I built a Random Forest model using a 70/30 train/test split. I left out `parcel` since it's just a house ID, `yrbuilt` because the answer column comes straight from it, and `before1980` since that's what we're trying to predict.
+
+The model got **92.93% accuracy** on the test data, which is above the 90% goal.
+
+```{python}
+features = [c for c in dwellings.columns if c not in ("parcel", "yrbuilt", "before1980")]
+
+X = dwellings.select(features).to_numpy()
+y = dwellings["before1980"].to_numpy()
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.30, random_state=42
+)
+
+clf = RandomForestClassifier(n_estimators=200, random_state=42)
+clf.fit(X_train, y_train)
+
+y_pred = clf.predict(X_test)
+
+accuracy = metrics.accuracy_score(y_test, y_pred)
+print(f"Test Accuracy: {accuracy:.4f} ({accuracy * 100:.2f}%)\n")
+print(metrics.classification_report(
+    y_test, y_pred, target_names=["1980 or Later", "Before 1980"]
+))
+```
+
