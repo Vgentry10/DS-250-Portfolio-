@@ -1,0 +1,138 @@
+---
+title: "Client Report - Show me!"
+subtitle: "Unit 4 Task 3"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+from lets_plot import *
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.inspection import permutation_importance
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+
+```{python}
+url = "https://github.com/byuidatascience/data4dwellings/raw/master/data-raw/dwellings_ml/dwellings_ml.csv"
+dwellings = pl.read_csv(url)
+
+features = [c for c in dwellings.columns if c not in ("parcel", "yrbuilt", "before1980")]
+X = dwellings.select(features).to_numpy()
+y = dwellings["before1980"].to_numpy()
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=42)
+
+# Original model (from Task 2): Random Forest
+rf = RandomForestClassifier(n_estimators=200, random_state=42)
+rf.fit(X_train, y_train)
+y_pred_rf  = rf.predict(X_test)
+y_prob_rf  = rf.predict_proba(X_test)[:, 1]
+
+# New model 1: Decision Tree
+dt = DecisionTreeClassifier(max_depth=10, random_state=42)
+dt.fit(X_train, y_train)
+y_pred_dt  = dt.predict(X_test)
+y_prob_dt  = dt.predict_proba(X_test)[:, 1]
+
+# New model 2: Gradient Boosting
+gb = GradientBoostingClassifier(n_estimators=200, learning_rate=0.1, max_depth=5, random_state=42)
+gb.fit(X_train, y_train)
+y_pred_gb  = gb.predict(X_test)
+y_prob_gb  = gb.predict_proba(X_test)[:, 1]
+```
+
+## QUESTION 1
+
+1. __Repeat the classification exercise using 2 different algorithms/models. Explain the differences between the 3 models__ (your original one, and the 2 new ones for this task).
+
+I ran three different models to see which one is best at guessing whether a Denver home was built before 1980:
+
+- **Random Forest (original)** – This one builds a whole bunch of decision trees (200 of them) and lets them vote on the answer. Because you're averaging a ton of trees, it doesn't overfit much and tends to be really reliable. The only downside is it's kind of a black box, you can't easily explain exactly why it made a specific call.
+- **Decision Tree (new)** – This is basically just one tree that keeps asking yes/no questions about the features until it lands on a prediction. It's super easy to follow and explain, but one tree on its own tends to be less accurate than the ensemble methods above it.
+- **Gradient Boosting (new)** – This one also builds a bunch of trees, but instead of doing it all at once, it builds them one at a time where each new tree tries to fix the mistakes the last one made. It's usually the most accurate of the three, but it takes the longest to train.
+
+```{python}
+# Accuracy summary for quick comparison
+for name, y_pred, y_prob in [
+    ("Random Forest",      y_pred_rf, y_prob_rf),
+    ("Decision Tree",      y_pred_dt, y_prob_dt),
+    ("Gradient Boosting",  y_pred_gb, y_prob_gb),
+]:
+    acc = metrics.accuracy_score(y_test, y_pred)
+    auc = metrics.roc_auc_score(y_test, y_prob)
+    print(f"{name:<22}  Accuracy: {acc:.4f}   ROC-AUC: {auc:.4f}")
+```
+
+
+## QUESTION 2
+
+1. For each model (your original one, and the 2 new ones for this task), display the classification report and the permutation importances for the most important features.  Discuss which model you would recommend to the Client and why.
+
+All three models do a solid job, but there are some real differences once you look at the numbers:
+
+- **Random Forest** has great precision and recall and the highest ROC-AUC (around 0.98). The features that mattered most were `livearea`, `sprice`, and `arcstyle_ONE-STORY`, which honestly makes a lot of sense since old homes are smaller, cheaper, and often ranch-style.
+- **Decision Tree** scores a bit lower across the board, but it picks the same important features, which is a good sign that those features are genuinely useful and not just random noise.
+- **Gradient Boosting** is right there with the Random Forest and maybe edges it out slightly, but it takes noticeably longer to train.
+
+**My pick for the client: Random Forest.** It's almost as accurate as Gradient Boosting, but it runs faster and is easier to update when new data comes in. The Decision Tree would be great for explaining the general idea to someone non-technical, but I wouldn't trust it alone for actual predictions.
+
+```{python}
+for name, clf_model, y_pred, y_prob in [
+    ("Random Forest",      rf, y_pred_rf, y_prob_rf),
+    ("Decision Tree",      dt, y_pred_dt, y_prob_dt),
+    ("Gradient Boosting",  gb, y_pred_gb, y_prob_gb),
+]:
+    print(f"{'='*60}")
+    print(f"  {name}")
+    print(f"{'='*60}")
+    print(metrics.classification_report(y_test, y_pred, target_names=["1980 or Later", "Before 1980"]))
+    print(f"ROC-AUC: {metrics.roc_auc_score(y_test, y_prob):.4f}\n")
+
+    perm = permutation_importance(clf_model, X_test, y_test, n_repeats=10, random_state=42, n_jobs=1)
+    imp_df = (
+        pl.DataFrame({"feature": features, "importance": perm.importances_mean.tolist()})
+        .sort("importance", descending=True)
+        .head(10)
+    )
+    chart = (
+        ggplot(
+            {"feature": imp_df["feature"].to_list(), "importance": imp_df["importance"].to_list()},
+            aes(x="feature", y="importance")
+        )
+        + geom_bar(stat="identity", fill="#2171b5")
+        + coord_flip()
+        + labs(
+            x="Feature",
+            y="Mean Decrease in Accuracy",
+            title=f"Top 10 Permutation Importances — {name}"
+        )
+    )
+    chart.show()
+```

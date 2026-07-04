@@ -1,0 +1,157 @@
+---
+title: "Client Report - Star Wars Survey (Task 1)"
+subtitle: "Unit 5 Task 1 — Data Loading & Email Parsing"
+author: "[STUDENT NAME]"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+from lets_plot import *
+import polars.selectors as cs
+
+LetsPlot.setup_html(isolated_frame=True)
+
+data_url = "https://byuidatascience.github.io/DS250-Course-Polars/Data/StarWars_with_emails.csv"
+```
+
+## Question 1 — Load the Star Wars Data
+
+So the first thing I noticed is that this CSV file is a mess straight out of the box. There are 10 rows of random metadata at the top before the actual data even starts, and to make things weirder, the column headers are spread across **two separate rows** (rows 11 and 12). Polars can't read this normally, so I had to do a manual cleanup first.
+
+Here's what I did:
+
+1. Read row 11 (the first header row) and used regex to trim down the long survey question text into short, usable names and stored it as series `a`.
+2. Read row 12 (the second header row) and cleaned that up too and stored as series `b`.
+3. Glued `a + b` together to make the final column names, then read the actual data starting at row 13.
+
+```{python}
+# Step 1 — Read and clean the first header row 
+a = pl.Series(
+    pl.read_csv(data_url, skip_rows=10, n_rows=1, has_header=False, encoding="utf8-lossy").row(0)
+)
+
+# Overwrite the ambiguous "seen any" entry
+a[2] = "seen_any"
+
+a = (
+    a.str.replace(r".+seen.+", "seen_")
+     .str.replace(r".+rank.+", "rank_")
+     .str.replace(r"(.+favorably.+)", "fav_")
+     .fill_null(strategy="forward")
+     .str.replace("\uFFFD+", "")   # remove replacement characters from bad encoding
+     .str.strip_chars()
+     .str.to_lowercase()
+     .str.replace_all(" ", "_")
+     .str.replace(r"location(.+)", "location")
+)
+
+# Give a few columns more readable names
+a[3]  = "star_wars_fan"
+a[30] = "who_shot_first"
+a[31] = "know_expanded_universe"
+a[32] = "expanded_universe_fan"
+a[33] = "star_trek_fan"
+```
+
+```{python}
+# Step 2 — Read and clean the second header row 
+b = pl.Series(
+    pl.read_csv(data_url, skip_rows=11, n_rows=1, has_header=False, encoding="utf8-lossy").row(0)
+)
+
+b = (
+    b.str.replace(r"Star Wars: (Episode \w+) .+", "${1}")
+     .str.replace("Response", "")
+     .str.replace_all(" ", "_")
+     .fill_null("")
+     .str.strip_chars()
+)
+```
+
+```{python}
+# Step 3 — Combine headers and load the data
+new_names = (a + b).to_list()
+
+df = pl.read_csv(
+    data_url,
+    skip_rows=12,
+    has_header=False,
+    new_columns=new_names,
+    encoding="utf8-lossy"
+)
+
+print(f"Rows: {df.height}  |  Columns: {df.width}")
+df.head(3)
+```
+
+---
+
+## Question 2 — Extract Names from the Email Column
+
+This one was actually pretty cool once I figured out regex. The emails have people's names baked into them (like `john.smith@gmail.com` or `jane_doe@yahoo.com`), just separated by a `.` or `_` before the `@`. So I used three regex patterns to pick out the first name, last name, and domain from each email. It's basically just telling Python "grab everything before the separator, everything between the separator and the @, and everything after the @."
+
+```{python}
+# Q2: Extract first name, last name, and email domain using regex
+df_names = df.select([
+    pl.col("email"),
+    # First name: letters before the first separator (., _, or digit)
+    pl.col("email").str.extract(r"^([a-zA-Z]+)(?:[._]|\d)", 1).alias("first_name"),
+    # Last name: letters after separator (., _, or digits), before @
+    pl.col("email").str.extract(r"(?:[._]|\d+)([a-zA-Z]+)@", 1).alias("last_name"),
+    # Domain: everything after @, stripped of whitespace
+    pl.col("email").str.extract(r"@(.+)$", 1).str.strip_chars().alias("email_domain"),
+])
+
+# Show the first 5 rows
+df_names.head(5)
+```
+
+The table above shows just the first 5 rows. you can see the email gets split up into the three new columns pretty cleanly. The regex handles both the dot and underscore separator styles, which covers basically everyone in the dataset.
+
+---
+
+## Question 3 — Domain Count Table
+
+For this one I just needed to count how many people used each email domain. One small gotcha was that some domains were capitalized inconsistently (like `Gmail.com` vs `gmail.com`), so I converted everything to lowercase first before grouping. That way they all get counted together instead of as separate domains.
+
+```{python}
+# Q3: Count respondents per email domain (case-insensitive)
+domain_counts = (
+    df.select(
+        pl.col("email")
+          .str.extract(r"@(.+)$", 1)
+          .str.strip_chars()
+          .str.to_lowercase()
+          .alias("email_domain")
+    )
+    .group_by("email_domain")
+    .agg(pl.len().alias("count"))
+    .sort("count", descending=True)
+)
+
+domain_counts
+```
+
+The table is sorted from most to least used. Looks like **`{python} domain_counts["email_domain"][0]`** is the most popular domain with **`{python} domain_counts["count"][0]`** respondents. Which is not too surprising honestly.

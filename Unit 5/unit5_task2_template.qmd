@@ -1,0 +1,239 @@
+---
+title: "Client Report - Star Wars Survey (Task 2)"
+subtitle: "Unit 5 Task 2: Recoding Range Variables"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+from lets_plot import *
+import polars.selectors as cs
+
+LetsPlot.setup_html(isolated_frame=True)
+
+data_url = "https://byuidatascience.github.io/DS250-Course-Polars/Data/StarWars_with_emails.csv"
+```
+
+```{python}
+# ── Rebuild column names (same logic as Task 1) ──────────────────────────────
+a = pl.Series(
+    pl.read_csv(data_url, skip_rows=10, n_rows=1, has_header=False, encoding="utf8-lossy").row(0)
+)
+a[2] = "seen_any"
+a = (
+    a.str.replace(r".+seen.+", "seen_")
+     .str.replace(r".+rank.+", "rank_")
+     .str.replace(r"(.+favorably.+)", "fav_")
+     .fill_null(strategy="forward")
+     .str.replace("\uFFFD+", "")
+     .str.strip_chars()
+     .str.to_lowercase()
+     .str.replace_all(" ", "_")
+     .str.replace(r"location(.+)", "location")
+)
+a[3]  = "star_wars_fan"
+a[30] = "who_shot_first"
+a[31] = "know_expanded_universe"
+a[32] = "expanded_universe_fan"
+a[33] = "star_trek_fan"
+
+b = pl.Series(
+    pl.read_csv(data_url, skip_rows=11, n_rows=1, has_header=False, encoding="utf8-lossy").row(0)
+)
+b = (
+    b.str.replace(r"Star Wars: (Episode \w+) .+", "${1}")
+     .str.replace("Response", "")
+     .str.replace_all(" ", "_")
+     .fill_null("")
+     .str.strip_chars()
+)
+
+new_names = (a + b).to_list()
+
+df = pl.read_csv(
+    data_url,
+    skip_rows=12,
+    has_header=False,
+    new_columns=new_names,
+    encoding="utf8-lossy"
+)
+
+print(f"Full dataset — Rows: {df.height}  |  Columns: {df.width}")
+```
+
+---
+
+## Question 1: Filter to Respondents Who Have Seen at Least One Film
+
+So the instructions specifically say NOT to use the `seen_any` column even though that sounds like exactly what you'd want. Instead, I'm looking at the six individual per-movie columns, one for each episode. If any of those are filled in, the person has seen at least one film and they stay in. If all six are null, they skipped the whole section which probably means they haven't seen any, so they get dropped.
+
+```{python}
+# The six per-episode "have you seen this film" columns
+seen_cols = [f"seen_Episode_{ep}" for ep in ["I", "II", "III", "IV", "V", "VI"]]
+
+# Keep rows where at least one episode column is not null
+df_seen = df.filter(
+    pl.any_horizontal([pl.col(c).is_not_null() for c in seen_cols])
+)
+
+print(f"Filtered dataset — Rows: {df_seen.height}  (expected: 835)")
+df_seen.select(["star_wars_fan", "seen_any"] + seen_cols).head(5)
+```
+
+After the filter I'm left with **`{python} df_seen.height`** rows, which is exactly 835 like the task says it should be. Good sign that the logic worked.
+
+---
+
+## Question 2: Recode Range Variables for Machine Learning
+
+This is the main thing this task is about. Machine learning models can't do anything with strings like `"30-44"` or `"$50,000 - $99,999"`. Those need to become actual numbers. So I'm going through each of the problem columns and converting them. For ranges I'm using the **midpoint** of the range as the number (so `"18-29"` becomes `23.5`), and for ordered categories like education or favorability I'm using **ordinal encoding** where each level gets a number in order. After making the new numeric column I delete the old string one since we don't need it anymore.
+
+---
+
+### 2a: Age
+
+There are only four age buckets so this one's pretty simple. I just picked the midpoint for each range. The last one `"> 60"` is open-ended so there's no real midpoint, so I went with 65 which seemed like a fair middle-of-the-road guess for that group.
+
+```{python}
+age_map = {
+    "18-29": 23.5,
+    "30-44": 37.0,
+    "45-60": 52.5,
+    "> 60":  65.0,
+}
+
+df_seen = df_seen.with_columns(
+    pl.col("age")
+      .replace(age_map, return_dtype=pl.Float64)
+      .alias("age_num")
+).drop("age")
+
+print("age_num unique values:", sorted(df_seen["age_num"].drop_nulls().unique().to_list()))
+```
+
+---
+
+### 2b: Education
+
+Education is a natural ladder from least to most schooling, so I'm just numbering the levels 1 through 5. No diploma at the bottom gets a 1, grad degree at the top gets a 5. Simple enough.
+
+```{python}
+edu_map = {
+    "Less than high school degree":       1,
+    "High school degree":                 2,
+    "Some college or Associate degree":   3,
+    "Bachelor degree":                    4,
+    "Graduate degree":                    5,
+}
+
+df_seen = df_seen.with_columns(
+    pl.col("education")
+      .replace(edu_map, return_dtype=pl.Int32)
+      .alias("education_num")
+).drop("education")
+
+print("education_num unique values:", sorted(df_seen["education_num"].drop_nulls().unique().to_list()))
+```
+
+---
+
+### 2c: Household Income
+
+Same idea as age, just use the midpoint of each bracket. The tricky one is `"$150,000+"` since it has no upper end. I went with $175,000 as a rough estimate. It's not perfect but it's better than leaving it as a string or just using 150,000 which would underrepresent that group.
+
+```{python}
+income_map = {
+    "$0 - $24,999":          12_500,
+    "$25,000 - $49,999":     37_500,
+    "$50,000 - $99,999":     75_000,
+    "$100,000 - $149,999":  125_000,
+    "$150,000+":            175_000,
+}
+
+df_seen = df_seen.with_columns(
+    pl.col("household_income")
+      .replace(income_map, return_dtype=pl.Int32)
+      .alias("income_num")
+).drop("household_income")
+
+print("income_num unique values:", sorted(df_seen["income_num"].drop_nulls().unique().to_list()))
+```
+
+---
+
+### 2d: Favorability Ratings
+
+This one was actually kind of satisfying to figure out. There are 14 favorability columns (one per character), and they ALL use the exact same 6-level scale, so I don't have to write the same map 14 times. I can just loop over all the columns that start with `fav_` and apply the same replacement to each one in a single pass.
+
+I set `"Unfamiliar (N/A)"` to 0 instead of null because "I don't know who this is" is meaningfully different from hating someone. It seemed wrong to just drop those responses.
+
+```{python}
+fav_map = {
+    "Unfamiliar (N/A)":                             0,
+    "Very unfavorably":                             1,
+    "Somewhat unfavorably":                         2,
+    "Neither favorably nor unfavorably (neutral)":  3,
+    "Somewhat favorably":                           4,
+    "Very favorably":                               5,
+}
+
+fav_cols = [c for c in df_seen.columns if c.startswith("fav_")]
+
+df_seen = df_seen.with_columns([
+    pl.col(c).replace(fav_map, return_dtype=pl.Int32).alias(c + "_num")
+    for c in fav_cols
+]).drop(fav_cols)
+
+print(f"Replaced {len(fav_cols)} fav_ columns.")
+print("Sample fav_num unique values:", sorted(df_seen["fav_Han_Solo_num"].drop_nulls().unique().to_list()))
+```
+
+---
+
+### Reformatted Data Excerpt
+
+Here's what the data looks like now after all four recoding steps. I picked a handful of the new numeric columns to show alongside `star_wars_fan` just so it's clear what we're working with.
+
+```{python}
+# Show a selection of the new numeric columns
+preview_cols = [
+    "star_wars_fan", "age_num", "education_num", "income_num",
+    "fav_Han_Solo_num", "fav_Luke_Skywalker_num", "fav_Darth_Vader_num",
+    "fav_Yoda_num"
+]
+
+df_seen.select(preview_cols).head(10)
+```
+
+**What changed:**
+
+| Original column | New column | How I encoded it |
+|---|---|---|
+| `age` | `age_num` | Midpoint of each age range (23.5 / 37.0 / 52.5 / 65.0) |
+| `education` | `education_num` | Ordinal 1–5 (1 = no diploma, 5 = grad degree) |
+| `household_income` | `income_num` | Midpoint of each income bracket (12,500 → 175,000) |
+| `fav_*` (14 cols) | `fav_*_num` (14 cols) | Ordinal 0–5 (0 = never heard of them, 5 = love them) |
+
+All the original string columns got dropped right after their replacement was created. The dataset should be in way better shape for a model now.

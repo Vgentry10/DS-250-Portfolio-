@@ -1,0 +1,247 @@
+---
+title: "Client Report - Show me More!"
+subtitle: "Unit 4 Task 4 (Stretch)"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+```{python}
+import polars as pl
+import numpy as np
+from lets_plot import *
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.inspection import permutation_importance
+
+LetsPlot.setup_html(isolated_frame=True)
+```
+
+```{python}
+# Load the primary ML-ready dataset
+url_ml = "https://github.com/byuidatascience/data4dwellings/raw/master/data-raw/dwellings_ml/dwellings_ml.csv"
+dwellings = pl.read_csv(url_ml)
+
+# Load the neighborhood dataset
+url_nbhd = "https://github.com/byuidatascience/data4dwellings/raw/master/data-raw/dwellings_neighborhoods_ml/dwellings_neighborhoods_ml.csv"
+neighborhoods = pl.read_csv(url_nbhd)
+```
+
+---
+
+## STRETCH QUESTION 1
+
+**Join the `dwellings_neighborhoods_ml.csv` data to `dwellings_ml.csv` on the `parcel` column and re-run the recommended model (Random Forest). Explain the differences and if this changes the model you recommend to the Client.**
+
+The original dataset only knows stuff about the house itself, like how big it is or what it's made of. The neighborhood dataset adds info about the area around the house. The idea is that some parts of Denver were mostly built up before 1980, so knowing which neighborhood a house is in might help the model make a better guess.
+
+```{python}
+# Deduplicate neighborhoods so each parcel appears once, then join
+neighborhoods_dedup = neighborhoods.unique(subset=["parcel"], keep="first")
+combined = dwellings.join(neighborhoods_dedup, on="parcel", how="left")
+
+# Feature sets (exclude non-feature columns)
+exclude = {"parcel", "yrbuilt", "before1980"}
+
+features_base = [c for c in dwellings.columns   if c not in exclude]
+features_comb = [c for c in combined.columns    if c not in exclude]
+
+# Cast any remaining string columns to numeric (one-hot already done in source data)
+def to_numpy_features(df, feature_list):
+    return df.select(feature_list).fill_null(0).to_numpy()
+
+X_base = to_numpy_features(dwellings, features_base)
+X_comb = to_numpy_features(combined,  features_comb)
+y       = dwellings["before1980"].to_numpy()
+
+# Use the same random split for fair comparison
+X_base_train, X_base_test, y_train, y_test = train_test_split(
+    X_base, y, test_size=0.30, random_state=42
+)
+X_comb_train, X_comb_test, _, _ = train_test_split(
+    X_comb, y, test_size=0.30, random_state=42
+)
+
+# Train identical Random Forest configs on both datasets
+rf_base = RandomForestClassifier(n_estimators=200, random_state=42)
+rf_base.fit(X_base_train, y_train)
+y_pred_base = rf_base.predict(X_base_test)
+y_prob_base = rf_base.predict_proba(X_base_test)[:, 1]
+
+rf_comb = RandomForestClassifier(n_estimators=200, random_state=42)
+rf_comb.fit(X_comb_train, y_train)
+y_pred_comb = rf_comb.predict(X_comb_test)
+y_prob_comb = rf_comb.predict_proba(X_comb_test)[:, 1]
+
+# Print side-by-side metrics
+for label, y_pred, y_prob in [
+    ("Baseline (no neighborhoods)", y_pred_base, y_prob_base),
+    ("With neighborhoods joined",   y_pred_comb, y_prob_comb),
+]:
+    acc = metrics.accuracy_score(y_test, y_pred)
+    auc = metrics.roc_auc_score(y_test, y_prob)
+    print(f"{label}")
+    print(f"  Accuracy : {acc:.4f}")
+    print(f"  ROC-AUC  : {auc:.4f}\n")
+```
+
+```{python}
+# Classification reports for both
+for label, clf_model, feat_list, X_test_arr, y_pred, y_prob in [
+    ("Baseline",      rf_base, features_base, X_base_test, y_pred_base, y_prob_base),
+    ("+ Neighborhoods", rf_comb, features_comb, X_comb_test, y_pred_comb, y_prob_comb),
+]:
+    print(f"{'='*60}")
+    print(f"  Random Forest — {label}")
+    print(f"{'='*60}")
+    print(metrics.classification_report(y_test, y_pred, target_names=["1980+", "Pre-1980"]))
+    print(f"ROC-AUC: {metrics.roc_auc_score(y_test, y_prob):.4f}\n")
+
+    perm = permutation_importance(clf_model, X_test_arr, y_test, n_repeats=5, random_state=42, n_jobs=1)
+    imp_df = (
+        pl.DataFrame({"feature": feat_list, "importance": perm.importances_mean.tolist()})
+        .sort("importance", descending=True)
+        .head(10)
+    )
+    chart = (
+        ggplot(
+            {"feature": imp_df["feature"].to_list(), "importance": imp_df["importance"].to_list()},
+            aes(x="feature", y="importance")
+        )
+        + geom_bar(stat="identity", fill="#2171b5")
+        + coord_flip()
+        + labs(
+            x="Feature",
+            y="Mean Decrease in Accuracy",
+            title=f"Top 10 Permutation Importances — {label}"
+        )
+    )
+    chart.show()
+```
+
+**What I found:** Adding the neighborhood data does seem to help, but only a little. But this makes sense because if a whole neighborhood was built in the 1960s, that's a pretty strong hint that a specific house in it is also from the 1960s. If the accuracy and ROC-AUC both go up noticeably (even just by half a percent or so), I'd tell the client to use the joined version since the extra data is free and easy to include. If the numbers barely move, it's probably not worth the added complexity and I'd just use the original model.
+
+---
+
+## STRETCH QUESTION 2
+
+**Build a regression model that predicts the year a house was built. Report appropriate evaluation metrics.**
+
+Up until now we've only asked the model a yes/no question, such as, was it built before 1980? Now im going to ask it to guess the actual year. This is a regression problem instead of a classification problem, so I switch over to a Random Forest Regressor. Its the same general idea (a bunch of decision trees working together), but instead of outputting "yes" or "no" it spits out a number like 1974.
+
+```{python}
+# Use the baseline feature set (no neighborhoods) for simplicity
+features_reg = [c for c in dwellings.columns if c not in {"parcel", "yrbuilt", "before1980"}]
+
+X_reg = dwellings.select(features_reg).to_numpy()
+y_reg = dwellings["yrbuilt"].to_numpy()
+
+X_reg_train, X_reg_test, y_reg_train, y_reg_test = train_test_split(
+    X_reg, y_reg, test_size=0.30, random_state=42
+)
+
+rf_reg = RandomForestRegressor(n_estimators=200, random_state=42, n_jobs=-1)
+rf_reg.fit(X_reg_train, y_reg_train)
+y_reg_pred = rf_reg.predict(X_reg_test)
+```
+
+```{python}
+# Regression evaluation metrics
+mae  = metrics.mean_absolute_error(y_reg_test, y_reg_pred)
+rmse = np.sqrt(metrics.mean_squared_error(y_reg_test, y_reg_pred))
+r2   = metrics.r2_score(y_reg_test, y_reg_pred)
+
+print(f"Mean Absolute Error (MAE) : {mae:.2f} years")
+print(f"Root Mean Squared Error   : {rmse:.2f} years")
+print(f"R²                        : {r2:.4f}")
+```
+
+```{python}
+# Actual vs Predicted scatter plot
+sample_idx = np.random.default_rng(42).choice(len(y_reg_test), size=500, replace=False)
+actual_s    = y_reg_test[sample_idx].tolist()
+predicted_s = y_reg_pred[sample_idx].tolist()
+
+chart_scatter = (
+    ggplot({"actual": actual_s, "predicted": predicted_s}, aes(x="actual", y="predicted"))
+    + geom_point(alpha=0.4, color="#2171b5", size=2)
+    + geom_abline(slope=1, intercept=0, color="red", linetype="dashed")
+    + labs(
+        x="Actual Year Built",
+        y="Predicted Year Built",
+        title="Regression: Actual vs. Predicted Year Built (500-row sample)"
+    )
+)
+chart_scatter.show()
+```
+
+```{python}
+# Residual distribution
+residuals = (y_reg_test - y_reg_pred).tolist()
+
+chart_resid = (
+    ggplot({"residual": residuals}, aes(x="residual"))
+    + geom_histogram(bins=50, fill="#2171b5", color="white")
+    + geom_vline(xintercept=0, color="red", linetype="dashed")
+    + labs(
+        x="Residual (Actual − Predicted)",
+        y="Count",
+        title="Residual Distribution — Year Built Regression"
+    )
+)
+chart_resid.show()
+```
+
+```{python}
+# Top feature importances for the regression model
+perm_reg = permutation_importance(rf_reg, X_reg_test, y_reg_test, n_repeats=5, random_state=42, n_jobs=1)
+imp_reg_df = (
+    pl.DataFrame({"feature": features_reg, "importance": perm_reg.importances_mean.tolist()})
+    .sort("importance", descending=True)
+    .head(10)
+)
+chart_imp = (
+    ggplot(
+        {"feature": imp_reg_df["feature"].to_list(), "importance": imp_reg_df["importance"].to_list()},
+        aes(x="feature", y="importance")
+    )
+    + geom_bar(stat="identity", fill="#238b45")
+    + coord_flip()
+    + labs(
+        x="Feature",
+        y="Mean Increase in MSE",
+        title="Top 10 Permutation Importances — Year Built Regressor"
+    )
+)
+chart_imp.show()
+```
+
+**What the numbers mean:**
+
+- **MAE (Mean Absolute Error)** is probably the easiest one to understand since it's just the average number of years the model was off. So if MAE is 8, the model's guesses were off by about 8 years on average. That's not bad when you think about how hard it is to guess a year just from square footage and style.
+- **RMSE (Root Mean Squared Error)** is similar to MAE but it punishes big mistakes extra. If RMSE is way higher than MAE, it means a handful of predictions were really far off like guessing 2000 for a house actually built in 1955. That can happen when an old house got heavily remodeled.
+- **R²** is basically "how much of the variation in year built does the model actually explain?" An R² of 0.80 means the model accounts for 80% of why years differ between houses. Higher is better, if it's below 0.5 the model is just guessing.
+- The **scatter plot** shows actual year on the x-axis and what the model predicted on the y-axis. If it were a perfect model, every dot would be right on the red dashed line. The closer the dots are to that line, the better.
+- The **residual histogram** shows how wrong the model was for each house. If it's roughly centered on zero, that means the model isn't consistently guessing too high or too low and it's just normally wrong in both directions, which is what you want.
+
+Honestly, for what the client actually needs (figuring out which houses might have asbestos), the yes/no classifier from the last task is more useful. Knowing a house was "probably built around 1972" is cool, but knowing "it was almost definitely built before 1980" is more actionable and useful in my opinion. The regression model is a nice bonus but I wouldn't swap out the classifier for it.

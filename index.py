@@ -1,12 +1,9 @@
 # %%
-
-# must have the .sqlite file in the exact same folder or list your entire path to the file.
-
-sqlite_file = 'lahmansbaseballdb.sqlite'
-
-con = sqlite3.connect(sqlite_file)
-
-q = '''
-SELECT * FROM batting LIMIT 2
-'''
-qr = pd.read_sql_query(q,con)
+# Read in libraries
+import pandas as pd
+import numpy as np
+from lets_plot import *
+LetsPlot.setup_html(isolated_frame=True)
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+df = pd.read_csv("https://github.com/byuidatascience/data4dwellings/raw/master/data-raw/dwellings_ml/dwellings_ml.csv")
