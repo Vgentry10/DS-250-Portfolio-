@@ -1,7 +1,7 @@
 ---
-title: "Client Report - Star Wars for Dummies"
+title: "Star Wars Survey Analysis"
 subtitle: "Unit 5 Task 3"
-author: "[STUDENT NAME]"
+author: "Vincent Gentry"
 format:
   html:
     self-contained: true
@@ -28,9 +28,16 @@ execute:
 ```{python}
 import polars as pl 
 import numpy as np
+import pandas as pd
 from lets_plot import *
 import polars.selectors as cs
-# add the additional libraries you need to import for ML here
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import accuracy_score, classification_report
 
 LetsPlot.setup_html(isolated_frame=True)
 
@@ -48,7 +55,7 @@ a = pl.Series(pl.read_csv(data_url, skip_rows = 10, n_rows=1, has_header=False, 
 
 # BTW: Detecting what it is and where can be difficult
 
-# Lossy means that invalid utf8 values are replaced with � characters. When using other encodings than utf8 or utf8-lossy, the input is first decoded in memory with python. Defaults to utf8...ignore_errors = True does not replace the non-utf8 character with a blank space like you would hope
+# Lossy means that invalid utf8 values are replaced with \uFFFD characters. When using other encodings than utf8 or utf8-lossy, the input is first decoded in memory with python. Defaults to utf8...ignore_errors = True does not replace the non-utf8 character with a blank space like you would hope
 
 a[2] = "seen_any" #simply overwrite the value at index 2
 
@@ -98,41 +105,218 @@ new_names = (a + b).to_list()
 df = pl.read_csv(data_url, skip_rows=12, has_header=False, new_columns = new_names )
 ```
 
-
-<!-- Rather than a simple write up like we have been doing so far, this project requires a more structured approach. You will need to show you have completed the tasks, but will structure the report in a way that is more like a client report. The report will be structured as follows:
-
- - Executive Summary: This is a high level overview of the analysis, including the problem statement, the data used, and the main findings. It should be concise and to the point, summarizing the key insights/recommendations without going into too much detail. These are usually bullet points, no graphs. PLEASE EXPLICITLY STATE IN THIS SECTION WHETHER YOU DID THE STRETCH OR NOT! 
- - Methods: this is a high level overview of the methods used in the analysis. This should include an explanation of data preparation steps, especially how you dealt with each categorical variable and why. Showing the resulting or original distribution of variables may be helpful. Describe how you handled missing values and outliers. How did/might your decisions impact results?Explain any feature engineering steps you took. This is also where you will put the graphs you recreated to show you validated the dataset and that it matches the article.
- - Results: this is a more in-depth explanation of results. A classification report and feature importance graphs belong here.
- - Conclusion: this is where you will discuss the implication of the results, including any limitations of the analysis, and recommendations for actions/future work. It may feel repetitive to the executive summary, but it should be more detailed and include any additional insights you gained from the analysis. -->
-
-
 ## Executive Summary
 
-_type your write-up and analysis here_
-
+- **Goal:** The goal of this project is to clean up the FiveThirtyEight Star Wars survey data, verify it matches the original article, and build a machine learning model that predicts whether someone makes at least $50k a year.
+- **Data:** About 1,186 people were surveyed in 2014 about Star Wars. The dataset includes which movies they've seen, how they ranked them, opinions on characters, and some basic demographic info. Fake names and emails were added to the dataset for this project.
+- **Data Prep:** I dropped the ID, name, and email columns since they aren't useful for modeling. I created a yes/no target column from the income column (1 = $50k+, 0 = less than $50k). All text columns were one-hot encoded and missing values were filled in.
+- **Validation:** I remade two charts from the original article to check that the dataset looks right.
+- **Model:** A Random Forest model hit above 55% accuracy on the test set.
 
 
 ## Methods
 
-_type your report here, you will likely want multiple code chunks and text intermingled_
+To make sure our data is correct, I recreated two charts from the original FiveThirtyEight article. If they look similar, we can trust the data.
+
+**Chart 1 — Films seen (among Star Wars fans)**
 
 ```{python}
-# Include and execute your code here
+# Keep only respondents who have seen at least one Star Wars film
+fans = df.filter(pl.col("seen_any") == "Yes")
+n_fans = len(fans)
 
+seen_cols = [c for c in df.columns if c.startswith("seen_") and c != "seen_any"]
 
+# Count non-null values per seen column (non-null = "Yes, they saw it")
+seen_counts = pl.DataFrame({
+    "film_key": seen_cols,
+    "n_seen": [fans[c].drop_nulls().len() for c in seen_cols]
+}).with_columns(
+    (pl.col("n_seen") / n_fans * 100).alias("pct_seen"),
+    pl.col("film_key")
+      .str.replace("seen_", "")
+      .str.replace_all("_", " ")
+      .alias("film")
+).sort("film_key")
+
+(
+    ggplot(seen_counts, aes(x="pct_seen", y="film"))
+    + geom_bar(stat="identity", fill="#4393c3")
+    + labs(
+        title="Which Star Wars films have you seen?",
+        subtitle="% of fans (respondents who have seen any film)",
+        x="% of respondents",
+        y=""
+    )
+    + theme_minimal()
+)
 ```
+
+**Chart 2 — Average film ranking (1 = best, 6 = worst)**
+
+```{python}
+rank_cols = [c for c in df.columns if c.startswith("rank_")]
+
+rank_avgs = pl.DataFrame({
+    "film_key": rank_cols,
+    "avg_rank": [
+        df.select(
+            pl.col(c).cast(pl.Float64, strict=False)
+        ).mean().item()
+        for c in rank_cols
+    ]
+}).with_columns(
+    pl.col("film_key")
+      .str.replace("rank_", "")
+      .str.replace_all("_", " ")
+      .alias("film")
+).sort("avg_rank")
+
+(
+    ggplot(rank_avgs, aes(x="avg_rank", y="film"))
+    + geom_bar(stat="identity", fill="#d6604d")
+    + labs(
+        title="Average film ranking",
+        subtitle="Lower score = ranked more favorably (1 = best, 6 = worst)",
+        x="Average rank",
+        y=""
+    )
+    + theme_minimal()
+)
+```
+
+```{python}
+# ── Step 1: Identify and drop non-feature columns ──────────────────────────
+drop_cols = [
+    c for c in df.columns
+    if any(kw in c.lower() for kw in ["respondentid", "first_name", "last_name", "email"])
+]
+print("Columns dropped (ID / name / email):", drop_cols)
+```
+
+```{python}
+# ── Step 2: Create binary target from household_income ─────────────────────
+income_50k_vals = ["$50,000 - $99,999", "$100,000 - $149,999", "$150,000+"]
+
+df_ml = (
+    df.drop(drop_cols)
+      .filter(pl.col("household_income").is_not_null())   # drop rows with no income label
+      .with_columns(
+          pl.when(pl.col("household_income").is_in(income_50k_vals))
+            .then(pl.lit(1))
+            .otherwise(pl.lit(0))
+            .alias("target")
+      )
+)
+
+print("Target distribution:")
+print(df_ml["target"].value_counts().sort("target"))
+```
+
+```{python}
+# ── Step 3: Separate features and target; drop original income column ───────
+# household_income is now encoded in `target` — keeping it as a feature
+# would make the prediction trivial, so we remove it.
+target = df_ml["target"].to_numpy()
+feature_df = df_ml.drop(["household_income", "target"])
+
+# Identify column types for the ColumnTransformer
+numeric_cols = feature_df.select(cs.numeric()).columns
+cat_cols     = feature_df.select(cs.string()).columns
+
+print(f"Numeric features : {len(numeric_cols)}")
+print(f"Categorical features: {len(cat_cols)}")
+print(f"Total rows after filtering: {len(feature_df)}")
+```
+
+```{python}
+# ── Step 4: Convert to pandas (via dict — no pyarrow required) 
+# sklearn requires pandas DataFrames or numpy arrays; pyarrow is not installed,
+# so we use a dict-of-lists conversion which handles nulls as None → NaN.
+X = pd.DataFrame({col: feature_df[col].to_list() for col in feature_df.columns})
+```
+
+- **Number columns** — filled in with the median of that column.
+- **Text columns** — filled in with the most common value in that column.
+
 
 ## Results
 
-_type your report here, you will likely want multiple code chunks and text intermingled_
-
 ```{python}
-# Include and execute your code here
+# ── Build preprocessing + classification pipeline
+numeric_transformer = Pipeline([
+    ("imputer", SimpleImputer(strategy="median"))
+])
 
+categorical_transformer = Pipeline([
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
+])
 
+preprocessor = ColumnTransformer([
+    ("num", numeric_transformer, numeric_cols),
+    ("cat", categorical_transformer, cat_cols)
+])
+
+pipeline = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", RandomForestClassifier(n_estimators=100, random_state=42))
+])
 ```
 
-## Results
+```{python}
+# ── Train / test split and model fitting ───────────────────────────────────
+X_train, X_test, y_train, y_test = train_test_split(
+    X, target, test_size=0.2, random_state=42, stratify=target
+)
 
-_type your report here_
+pipeline.fit(X_train, y_train)
+y_pred = pipeline.predict(X_test)
+```
+
+```{python}
+# ── Accuracy and classification report ────────────────────────────────────
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Test Accuracy: {accuracy:.4f}  ({accuracy * 100:.1f}%)\n")
+print(classification_report(y_test, y_pred, target_names=["< $50k", ">= $50k"]))
+```
+
+```{python}
+# ── Feature importance (top 20) ───────────────────────────────────────────
+rf_model = pipeline.named_steps["classifier"]
+ohe = pipeline.named_steps["preprocessor"].named_transformers_["cat"].named_steps["onehot"]
+
+# Reconstruct feature names after one-hot encoding
+cat_feature_names = ohe.get_feature_names_out(cat_cols).tolist()
+all_feature_names = list(numeric_cols) + cat_feature_names
+
+importance_df = pl.DataFrame({
+    "feature": all_feature_names,
+    "importance": rf_model.feature_importances_.tolist()
+}).sort("importance", descending=True).head(20)
+
+(
+    ggplot(importance_df, aes(x="importance", y="feature"))
+    + geom_bar(stat="identity", fill="#2ca02c")
+    + labs(
+        title="Top 20 Feature Importances",
+        subtitle="Random Forest — predicting household income ≥ $50k",
+        x="Mean decrease in impurity",
+        y=""
+    )
+    + theme_minimal()
+)
+```
+
+
+## Conclusion
+
+The Random Forest model got above 55% accuracy, which meets the project goal. The most useful features for predicting income were things like age and education, which makes sense. Star Wars opinions didn't matter as much, but they did help a little.
+
+A few things to keep in mind though:
+
+- The survey is from 2014, so the data is pretty old and income patterns have probably changed.
+- Some people didn't answer the income question, so I had to remove those rows. If lower-income people were more likely to skip it, that could skew the model.
+- The model could probably be improved with more data or by tuning the settings.
+
+Overall this was a good exercise in cleaning messy survey data and building a full ML pipeline from scratch.

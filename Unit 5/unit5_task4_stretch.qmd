@@ -1,0 +1,259 @@
+---
+title: "Can You Validate Me?"
+subtitle: "Unit 5 Stretch Task — Star Wars Survey Chart Replication"
+author: "Vincent Gentry"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute:
+  warning: false
+
+---
+
+```{python}
+import polars as pl
+import polars.selectors as cs
+from lets_plot import *
+
+LetsPlot.setup_html(isolated_frame=True)
+
+data_url = "https://byuidatascience.github.io/DS250-Course-Polars/Data/StarWars_with_emails.csv"
+```
+
+## Data Loading & Cleaning
+
+The data cleaning mirrors the approach from Task 3 — the two-row header is merged
+into a single set of column names before the data rows are read in.
+
+```{python}
+a = pl.Series(
+    pl.read_csv(data_url, skip_rows=10, n_rows=1, has_header=False,
+                encoding="utf8-lossy").row(0)
+)
+
+a[2] = "seen_any"
+
+a = (
+    a.str.replace(r".+seen.+",       "seen_")
+     .str.replace(r".+rank.+",       "rank_")
+     .str.replace(r"(.+favorably.+)", "fav_")
+     .fill_null(strategy="forward")
+     .str.replace("\uFFFD+", "")
+     .str.strip_chars()
+     .str.to_lowercase()
+     .str.replace_all(" ", "_")
+     .str.replace(r"location(.+)", "location")
+)
+
+a[3]  = "star_wars_fan"
+a[30] = "who_shot_first"
+a[31] = "know_expanded_universe"
+a[32] = "expanded_universe_fan"
+a[33] = "star_trek_fan"
+
+b = pl.Series(
+    pl.read_csv(data_url, skip_rows=11, n_rows=1, has_header=False,
+                encoding="utf8-lossy").row(0)
+)
+
+b = (
+    b.str.replace(r"Star Wars: (Episode \w+) .+", "${1}")
+     .str.replace("Response", "")
+     .str.replace_all(" ", "_")
+     .fill_null("")
+     .str.strip_chars()
+)
+
+new_names = (a + b).to_list()
+
+df = pl.read_csv(
+    data_url, skip_rows=12, has_header=False,
+    new_columns=new_names
+)
+
+print(f"Rows: {len(df)}  |  Columns: {len(df.columns)}")
+```
+
+---
+
+## Chart 1 — "Which 'Star Wars' Films Have You Seen?"
+
+
+```{python}
+fans = df.filter(pl.col("seen_any") == "Yes")
+n_fans = len(fans)
+
+seen_cols = [c for c in df.columns if c.startswith("seen_") and c != "seen_any"]
+
+episode_labels = {
+    "seen_Episode_I":   "The Phantom Menace",
+    "seen_Episode_II":  "Attack of the Clones",
+    "seen_Episode_III": "Revenge of the Sith",
+    "seen_Episode_IV":  "A New Hope",
+    "seen_Episode_V":   "The Empire Strikes Back",
+    "seen_Episode_VI":  "Return of the Jedi",
+}
+
+seen_counts = pl.DataFrame({
+    "col":   seen_cols,
+    "n_seen": [fans[c].drop_nulls().len() for c in seen_cols],
+}).with_columns(
+    (pl.col("n_seen") / n_fans * 100).alias("pct"),
+    pl.col("col").replace(episode_labels).alias("film"),
+).sort("pct", descending=True).with_columns(
+    (pl.col("pct").round(0).cast(pl.Int32).cast(pl.String) + "%").alias("label")
+)
+
+print(seen_counts.select(["film", "pct"]))
+```
+
+```{python}
+(
+    ggplot(seen_counts, aes(x="pct", y=as_discrete("film", order_by="pct")))
+    + geom_bar(
+        stat="identity",
+        fill="#008fd5",
+        width=0.6,
+    )
+    + geom_text(
+        aes(label="label"),
+        hjust=-0.1,
+        size=9,
+        color="#555555",
+    )
+    + scale_x_continuous(
+        limits=[0, 95],
+        breaks=[0, 20, 40, 60, 80],
+        labels=["0%", "20%", "40%", "60%", "80%"],
+    )
+    + labs(
+        title="Which 'Star Wars' Films Have You Seen?",
+        subtitle=f"Of {n_fans:,} respondents who have seen any film",
+        x="",
+        y="",
+    )
+    + theme_minimal()
+    + theme(
+        plot_title=element_text(size=14, face="bold"),
+        plot_subtitle=element_text(size=10, color="#555555"),
+        panel_grid_major_y=element_blank(),
+        panel_grid_major_x=element_line(color="#e0e0e0"),
+        panel_grid_minor=element_blank(),
+        axis_ticks=element_blank(),
+        axis_text=element_text(size=10),
+    )
+)
+```
+
+---
+
+## Chart 2 — "What's the Best 'Star Wars' Movie?
+
+```{python}
+seen_all = fans.filter(
+    pl.all_horizontal(
+        [pl.col(c).is_not_null() for c in seen_cols]
+    )
+)
+n_all = len(seen_all)
+
+rank_cols = [c for c in df.columns if c.startswith("rank_")]
+
+episode_rank_labels = {
+    "rank_Episode_I":   "The Phantom Menace",
+    "rank_Episode_II":  "Attack of the Clones",
+    "rank_Episode_III": "Revenge of the Sith",
+    "rank_Episode_IV":  "A New Hope",
+    "rank_Episode_V":   "The Empire Strikes Back",
+    "rank_Episode_VI":  "Return of the Jedi",
+}
+
+ranked_best = pl.DataFrame({
+    "col": rank_cols,
+    "n_best": [
+        seen_all.filter(
+            pl.col(c).cast(pl.Int32, strict=False) == 1
+        ).shape[0]
+        for c in rank_cols
+    ],
+}).with_columns(
+    (pl.col("n_best") / n_all * 100).alias("pct_best"),
+    pl.col("col").replace(episode_rank_labels).alias("film"),
+).sort("pct_best", descending=True).with_columns(
+    (pl.col("pct_best").round(0).cast(pl.Int32).cast(pl.String) + "%").alias("label")
+)
+
+print(ranked_best.select(["film", "pct_best"]))
+```
+
+```{python}
+(
+    ggplot(ranked_best, aes(x="pct_best", y=as_discrete("film", order_by="pct_best")))
+    + geom_bar(
+        stat="identity",
+        fill="#008fd5",
+        width=0.6,
+    )
+    + geom_text(
+        aes(label="label"),
+        hjust=-0.1,
+        size=9,
+        color="#555555",
+    )
+    + scale_x_continuous(
+        limits=[0, 55],
+        breaks=[0, 10, 20, 30, 40, 50],
+        labels=["0%", "10%", "20%", "30%", "40%", "50%"],
+    )
+    + labs(
+        title="What's the Best 'Star Wars' Movie?",
+        subtitle=f"Of {n_all:,} respondents who have seen all 6 films, % who ranked each film #1",
+        x="",
+        y="",
+    )
+    + theme_minimal()
+    + theme(
+        plot_title=element_text(size=14, face="bold"),
+        plot_subtitle=element_text(size=10, color="#555555"),
+        panel_grid_major_y=element_blank(),
+        panel_grid_major_x=element_line(color="#e0e0e0"),
+        panel_grid_minor=element_blank(),
+        axis_ticks=element_blank(),
+        axis_text=element_text(size=10),
+    )
+)
+```
+
+
+---
+
+## Validation
+
+### Chart 1 — Films Seen
+
+Pretty much what you'd expect, the original trilogy (Episodes IV–VI) was seen by around 79–83% of fans, and the prequels drop off to somewhere in the 53–60% range. Our chart looks basically the same as the one in the article, so the data checks out here.
+
+### Chart 2 — Best Film
+
+*The Empire Strikes Back* is the most popular, grabbing about 36% of #1 votes, with *A New Hope* not too far behind at around 25%. The prequels are basically a rounding error. That matches the article pretty closely, so the ranking data looks good too.
+
+### Overall
+
+Both charts line up well enough with the article that we can trust the dataset. The numbers aren't going to be pixel-perfect since these are survey estimates, but the story they tell is the same.
+
+
