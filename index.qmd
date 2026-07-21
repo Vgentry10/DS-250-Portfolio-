@@ -1,0 +1,21 @@
+---
+title: "DS 250 Portfolio"
+subtitle: "Vincent Gentry"
+---
+
+Welcome to my DS 250 Data Science Programming portfolio. This site showcases work completed throughout the course, including client reports, data visualizations, and machine learning projects.
+
+## About Me
+
+I am a student in DS 250 at BYU-Idaho working to develop skills in Python-based data science, including data wrangling, visualization, and predictive modeling.
+
+## Portfolio Contents
+
+| Section | Description |
+|---|---|
+| **Goals Letter** | Mid-course reflection on learning targets |
+| **Unit 1** | Introduction to Python, Pandas, and data visualization |
+| **Unit 2** | Data wrangling and exploratory analysis |
+| **Unit 3** | Advanced visualizations and statistical summaries |
+| **Unit 4** | Machine learning and predictive models |
+| **Unit 5** | Star Wars Survey analysis |

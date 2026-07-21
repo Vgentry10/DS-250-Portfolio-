@@ -1,0 +1,62 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "DS 250 Portfolio - Vincent Gentry"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - text: "Goals Letter"
+        href: mid_letter.qmd
+      - text: "Unit 1"
+        menu:
+          - text: "Project 0: Introduction"
+            href: "Unit 1/P0_template.qmd"
+          - text: "Task 1"
+            href: "Unit 1/Unit1_Task1.qmd"
+          - text: "Task 2"
+            href: "Unit 1/unit1_task2_template.qmd"
+          - text: "Task 3"
+            href: "Unit 1/unit1_task3_template.qmd"
+      - text: "Unit 2"
+        menu:
+          - text: "Task 1"
+            href: "Unit 2/unit2_task1_template.qmd"
+          - text: "Task 2"
+            href: "Unit 2/unit2_task2_template.qmd"
+          - text: "Task 3"
+            href: "Unit 2/unit2_task3_report.qmd"
+      - text: "Unit 3"
+        menu:
+          - text: "Task 1"
+            href: "Unit 3/unit3_task1_template.qmd"
+          - text: "Task 2"
+            href: "Unit 3/unit3_task2_template.qmd"
+          - text: "Task 3"
+            href: "Unit 3/unit3_task3_template.qmd"
+          - text: "Task 4"
+            href: "Unit 3/unit3_task4_template.qmd"
+      - text: "Unit 4"
+        menu:
+          - text: "Task 1"
+            href: "Unit 4/unit4_task1_template.qmd"
+          - text: "Task 2"
+            href: "Unit 4/unit4_task2_template.qmd"
+          - text: "Task 3"
+            href: "Unit 4/unit4_task3_template.qmd"
+          - text: "Task 4"
+            href: "Unit 4/unit4_task4_template.qmd"
+      - text: "Unit 5"
+        menu:
+          - text: "Star Wars Survey"
+            href: "Unit 5/report.qmd"
+          - text: "Task 4 (Stretch)"
+            href: "Unit 5/unit5_task4_stretch.qmd"
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
