@@ -1,7 +1,7 @@
 ---
 title: "Course Goals Letter (Mid)"
 subtitle: "Week 7"
-author: "[STUDENT NAME]"
+author: "Vincent Gentry"
 format:
   html:
     self-contained: true
@@ -76,17 +76,19 @@ execute:
 ## My Letter
 
 ### Reflection & Progress Report
-* **Original Goal:** [State the grade you aimed for at the beginning of the semester]
-* **Current Status:** [Briefly describe your overall progress toward achieving this goal]
+* **Original Goal:** I am aiming for an A grade for my goal this semester.
+* **Current Status:** I am on my way to completing this goal, I need to finsih some stetch tasks, and redue some core tasks, but I should be able to fulfill the requirements for my grade. 
 
 ### Current Standings 
 *(Please verify these numbers against your current gradebook status)*
-* **Tasks Completed:** [Number]
-* **Stretch Tasks Completed:** [Number]
-* **Methods & Calculations Quizzes (at 100%):** [Number]
+* **Tasks Completed:** 7
+* **Stretch Tasks Completed:** 2
+* **Methods & Calculations Quizzes (at 100%):** 3
 
 ### Community & Activity Description
-[Provide a brief explanation of the specific data science community activities you have participated in or completed so far.]
-
+I have learned to give mock interviews and revise my resume to make it more professional looking to my employers
 ### Looking Forward (Action Plan)
-[Use this space to gauge what you need to do to finish strong over the next 7 weeks. If you are currently off-track from your original goal, explain why and detail your plan to catch up—or describe your revised target grade and approach.]
+I just need to stay on top of my assingments and redue the ones that I need 
+to work on so I can atleast get some credit from those. 
+I want to manage my tasks better so I can have
+more time to work on the assignments that are more of a struggle for me. 
