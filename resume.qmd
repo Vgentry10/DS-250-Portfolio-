@@ -14,20 +14,20 @@ format:
 
 | | |
 |---|---|
-| **Email** | your.email@example.com |
-| **LinkedIn** | linkedin.com/in/yourprofile |
+| **Email** | vincentgentry10@gmail.com |
+| **LinkedIn** | https://www.linkedin.com/in/vincent-gentry-50a272384/ |
 | **GitHub** | github.com/Vgentry10 |
-| **Location** | City, State |
+| **Location** | Lake Stevens, Washington |
 
 ---
 
 ## Education
 
-**Bachelor of Science — [Your Major]**  
-Brigham Young University – Idaho | Expected Graduation: [Month Year]  
-GPA: [X.XX]
+**Bachelor of Science — Data Science**  
+Brigham Young University – Idaho | Expected Graduation: [2027]  
+GPA: [3.56]
 
-Relevant Coursework: DS 250 (Data Science Programming), [Other courses]
+Relevant Coursework: DS 250 (Data Science Programming), 
 
 ---
 
@@ -50,37 +50,34 @@ Relevant Coursework: DS 250 (Data Science Programming), [Other courses]
 - Analyzed the Star Wars Survey dataset; cleaned and visualized results to draw insights
 - Created a public portfolio website using Quarto and GitHub Pages: [vgentry10.github.io/DS-250-Portfolio-](https://vgentry10.github.io/DS-250-Portfolio-/)
 
-### [Project Name]
-*[Context/Class] | [Date]*
-
-- [Brief description of what you built or analyzed]
-- [Tools used, results achieved]
-
 ---
 
 ## Work Experience
 
-**[Job Title]**  
-[Company Name] | [City, State] | [Start Date] – [End Date]
+**Overnight Inventory Associate**  
+Home Depot, Lake Stevens, WA | Jun 2023 – Sep 2023 
 
-- [Key responsibility or accomplishment]
-- [Key responsibility or accomplishment]
+Night shift inventory associate, unloading and organizing product to prepare for next day's business. 
+Jun 2023 – Sep 2023 
+● Disassembled palets and accurately sorted products into designated locations, ensuring efficient store organization. 
+● Scanned and tracked inventory levels across aisles to support timely replenishment and prevent stock shortages. 
+● Maintained clean and organized facilities, creating a positive environment for customers and a smooth transition for morning shift 
+teams. 
 
-**[Job Title]**  
-[Company Name] | [City, State] | [Start Date] – [End Date]
+**Staging Assistant**  
+Village East Apartments, Lubbock, TX  | Summers 2020-2022
 
-- [Key responsibility or accomplishment]
-- [Key responsibility or accomplishment]
-
----
-
-## Certifications & Community
-
-- [Certification Name] — [Issuer], [Year]
-- [DS Community Activity or Club]
+Staged and prepared living areas for prospective tenants from Texas Christian University (TCU).                                
+● Staged and assembled apartment furnishings to create inviting, market-ready spaces. 
+Summers 2020-2022 
+● Replaced lighting fixtures, filters, and furniture (chairs, tables) to maintain functional, aesthetica ly pleasing environments. 
+● Performed quality assurance by identifying and addressing broken appliances and other maintenance issues to ensure optimal 
+apartment condition. 
+● Maintained cleanliness of interiors and exteriors, including stairwe ls, offices, and living areas, ensuring a pristine, welcoming 
+atmosphere.
 
 ---
 
 ## About Me
 
-[Write 2–3 sentences about yourself, your interests, and your career goals in data science.]
+I am a Data Science student at BYU-Idaho with a passion for turning raw data into meaningful insights that drive real-world decisions. My career goal is to work as a data analyst or machine learning engineer and ideally in a role where I can build predictive models and interactive visualizations that help organizations solve complex problems. Outside of data science, I enjoy hiking the Pacific Northwest trails near my home in Lake Stevens, and writing personal story projects that blend creativity with narrtive problem solving.

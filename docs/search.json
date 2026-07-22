@@ -291,21 +291,21 @@
     "href": "resume.html",
     "title": "Resume",
     "section": "",
-    "text": "Email\nyour.email@example.com\n\n\nLinkedIn\nlinkedin.com/in/yourprofile\n\n\nGitHub\ngithub.com/Vgentry10\n\n\nLocation\nCity, State"
+    "text": "Email\nvincentgentry10@gmail.com\n\n\nLinkedIn\nhttps://www.linkedin.com/in/vincent-gentry-50a272384/\n\n\nGitHub\ngithub.com/Vgentry10\n\n\nLocation\nLake Stevens, Washington"
   },
   {
     "objectID": "resume.html#contact",
     "href": "resume.html#contact",
     "title": "Resume",
     "section": "",
-    "text": "Email\nyour.email@example.com\n\n\nLinkedIn\nlinkedin.com/in/yourprofile\n\n\nGitHub\ngithub.com/Vgentry10\n\n\nLocation\nCity, State"
+    "text": "Email\nvincentgentry10@gmail.com\n\n\nLinkedIn\nhttps://www.linkedin.com/in/vincent-gentry-50a272384/\n\n\nGitHub\ngithub.com/Vgentry10\n\n\nLocation\nLake Stevens, Washington"
   },
   {
     "objectID": "resume.html#education",
     "href": "resume.html#education",
     "title": "Resume",
     "section": "Education",
-    "text": "Education\nBachelor of Science — [Your Major]\nBrigham Young University – Idaho | Expected Graduation: [Month Year]\nGPA: [X.XX]\nRelevant Coursework: DS 250 (Data Science Programming), [Other courses]"
+    "text": "Education\nBachelor of Science — Data Science\nBrigham Young University – Idaho | Expected Graduation: [2027]\nGPA: [3.56]\nRelevant Coursework: DS 250 (Data Science Programming),"
   },
   {
     "objectID": "resume.html#skills",
@@ -319,14 +319,14 @@
     "href": "resume.html#projects",
     "title": "Resume",
     "section": "Projects",
-    "text": "Projects\n\nDS 250 Portfolio — Data Science Programming\nBYU-Idaho | [Semester Year]\n\nCompleted 5 units of data science projects using Python, Pandas, and machine learning\nBuilt predictive models using Random Forest and Decision Tree classifiers (scikit-learn)\nAnalyzed the Star Wars Survey dataset; cleaned and visualized results to draw insights\nCreated a public portfolio website using Quarto and GitHub Pages: vgentry10.github.io/DS-250-Portfolio-\n\n\n\n[Project Name]\n[Context/Class] | [Date]\n\n[Brief description of what you built or analyzed]\n[Tools used, results achieved]"
+    "text": "Projects\n\nDS 250 Portfolio — Data Science Programming\nBYU-Idaho | [Semester Year]\n\nCompleted 5 units of data science projects using Python, Pandas, and machine learning\nBuilt predictive models using Random Forest and Decision Tree classifiers (scikit-learn)\nAnalyzed the Star Wars Survey dataset; cleaned and visualized results to draw insights\nCreated a public portfolio website using Quarto and GitHub Pages: vgentry10.github.io/DS-250-Portfolio-"
   },
   {
     "objectID": "resume.html#work-experience",
     "href": "resume.html#work-experience",
     "title": "Resume",
     "section": "Work Experience",
-    "text": "Work Experience\n[Job Title]\n[Company Name] | [City, State] | [Start Date] – [End Date]\n\n[Key responsibility or accomplishment]\n[Key responsibility or accomplishment]\n\n[Job Title]\n[Company Name] | [City, State] | [Start Date] – [End Date]\n\n[Key responsibility or accomplishment]\n[Key responsibility or accomplishment]"
+    "text": "Work Experience\nOvernight Inventory Associate\nHome Depot, Lake Stevens, WA | Jun 2023 – Sep 2023\nNight shift inventory associate, unloading and organizing product to prepare for next day’s business. Jun 2023 – Sep 2023 ● Disassembled palets and accurately sorted products into designated locations, ensuring efficient store organization. ● Scanned and tracked inventory levels across aisles to support timely replenishment and prevent stock shortages. ● Maintained clean and organized facilities, creating a positive environment for customers and a smooth transition for morning shift teams.\nStaging Assistant\nVillage East Apartments, Lubbock, TX | Summers 2020-2022\nStaged and prepared living areas for prospective tenants from Texas Christian University (TCU).\n● Staged and assembled apartment furnishings to create inviting, market-ready spaces. Summers 2020-2022 ● Replaced lighting fixtures, filters, and furniture (chairs, tables) to maintain functional, aesthetica ly pleasing environments. ● Performed quality assurance by identifying and addressing broken appliances and other maintenance issues to ensure optimal apartment condition. ● Maintained cleanliness of interiors and exteriors, including stairwe ls, offices, and living areas, ensuring a pristine, welcoming atmosphere."
   },
   {
     "objectID": "resume.html#certifications-community",
@@ -340,7 +340,7 @@
     "href": "resume.html#about-me",
     "title": "Resume",
     "section": "About Me",
-    "text": "About Me\n[Write 2–3 sentences about yourself, your interests, and your career goals in data science.]"
+    "text": "About Me\nI am a Data Science student at BYU-Idaho with a passion for turning raw data into meaningful insights that drive real-world decisions. My career goal is to work as a data analyst or machine learning engineer and ideally in a role where I can build predictive models and interactive visualizations that help organizations solve complex problems. Outside of data science, I enjoy hiking the Pacific Northwest trails near my home in Lake Stevens, and writing personal story projects that blend creativity with narrtive problem solving."
   },
   {
     "objectID": "index.html",
