@@ -54,6 +54,8 @@ website:
             href: "Unit 5/report.qmd"
           - text: "Task 4 (Stretch)"
             href: "Unit 5/unit5_task4_stretch.qmd"
+      - text: "Resume"
+        href: resume.qmd
 
 format:
   html:

@@ -4177,6 +4177,10 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   </li>  
     </ul>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../resume.html"> 
+<span class="menu-text">Resume</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -4230,7 +4234,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   <li><a href="#questiontask-4" id="toc-questiontask-4">QUESTION|TASK 4</a></li>
   </ul>
 </nav>
-<div id="56fa3c05" class="cell" data-execution_count="1">
+<div id="a3f0fb26" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
@@ -4250,7 +4254,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 </details>
 <div class="cell-output cell-output-display">
 
-        <div id="MELICD"></div>
+        <div id="P6D6GQ"></div>
         <script type="text/javascript" data-lets-plot-script="library">
             if(!window.letsPlotCallQueue) {
                 window.letsPlotCallQueue = [];
@@ -4274,9 +4278,9 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
                     var div = document.createElement("div");
                     div.style.color = 'darkred';
                     div.textContent = 'Error loading Lets-Plot JS';
-                    document.getElementById("MELICD").appendChild(div);
+                    document.getElementById("P6D6GQ").appendChild(div);
                 };
-                var e = document.getElementById("MELICD");
+                var e = document.getElementById("P6D6GQ");
                 e.appendChild(script);
             })()
         </script>
@@ -4695,7 +4699,7 @@ white-space: pre-wrap;
 <section id="client-request-name-trends-over-time" class="level2">
 <h2 class="anchored" data-anchor-id="client-request-name-trends-over-time">Client Request: Name Trends Over Time</h2>
 <p><strong>How has usage changed over time for Mary, Martha, Peter, Paul, and a famous movie name (Elsa)?</strong></p>
-<div id="f1f1dcac" class="cell" data-execution_count="2">
+<div id="c3061b79" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>focus_names <span class="op">=</span> [<span class="st">&quot;Mary&quot;</span>, <span class="st">&quot;Martha&quot;</span>, <span class="st">&quot;Peter&quot;</span>, <span class="st">&quot;Paul&quot;</span>, <span class="st">&quot;Elsa&quot;</span>]</span>
@@ -4787,7 +4791,7 @@ white-space: pre-wrap;
 </div>
 </div>
 </div>
-<div id="5a1b8b46" class="cell" data-execution_count="3">
+<div id="793ddee4" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>(</span>
@@ -4801,7 +4805,7 @@ white-space: pre-wrap;
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="3">
-   <div id="MqqRMv"></div>
+   <div id="9vxFDE"></div>
    <script type="text/javascript" data-lets-plot-script="plot">
    
    (function() {
@@ -4826,7 +4830,7 @@ white-space: pre-wrap;
        };
    }
    
-   const containerDiv = document.getElementById("MqqRMv");
+   const containerDiv = document.getElementById("9vxFDE");
    let fig = null;
    
    function renderPlot() {
@@ -4928,7 +4932,7 @@ white-space: pre-wrap;
 <section id="questiontask-1" class="level2">
 <h2 class="anchored" data-anchor-id="questiontask-1">QUESTION|TASK 1</h2>
 <p><strong>What was the earliest year that the name ‘Felisha’ was used?</strong></p>
-<div id="e6e48862" class="cell" data-execution_count="4">
+<div id="829f63b3" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>felisha <span class="op">=</span> names_year.<span class="bu">filter</span>(pl.col(<span class="st">&quot;name&quot;</span>) <span class="op">==</span> <span class="st">&quot;Felisha&quot;</span>)</span>
@@ -5355,7 +5359,7 @@ white-space: pre-wrap;
 <section id="questiontask-2" class="level2">
 <h2 class="anchored" data-anchor-id="questiontask-2">QUESTION|TASK 2</h2>
 <p><strong>What year had the most babies named ‘David’? How many babies were named ‘David’ that year?</strong></p>
-<div id="b7c6ff55" class="cell" data-execution_count="5">
+<div id="54a4ffb8" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>david_by_year <span class="op">=</span> (</span>
@@ -5421,7 +5425,7 @@ white-space: pre-wrap;
 </div>
 </div>
 </div>
-<div id="b79e3149" class="cell" data-execution_count="6">
+<div id="bf32f357" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>(</span>
@@ -5436,7 +5440,7 @@ white-space: pre-wrap;
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="6">
-   <div id="neemeF"></div>
+   <div id="KPvIsi"></div>
    <script type="text/javascript" data-lets-plot-script="plot">
    
    (function() {
@@ -5461,7 +5465,7 @@ white-space: pre-wrap;
        };
    }
    
-   const containerDiv = document.getElementById("neemeF");
+   const containerDiv = document.getElementById("KPvIsi");
    let fig = null;
    
    function renderPlot() {
@@ -5570,7 +5574,7 @@ white-space: pre-wrap;
 <section id="questiontask-3" class="level2">
 <h2 class="anchored" data-anchor-id="questiontask-3">QUESTION|TASK 3</h2>
 <p><strong>What year did your name hit its peak? How many babies were named your name in that year?</strong></p>
-<div id="b147b9be" class="cell" data-execution_count="7">
+<div id="83285d17" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>my_name <span class="op">=</span> <span class="st">&quot;Vincent&quot;</span></span>
@@ -5638,7 +5642,7 @@ white-space: pre-wrap;
 </div>
 </div>
 </div>
-<div id="2b4a593c" class="cell" data-execution_count="8">
+<div id="c9fd2ab0" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>(</span>
@@ -5653,7 +5657,7 @@ white-space: pre-wrap;
 <span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="8">
-   <div id="dLQEqV"></div>
+   <div id="8dlb5T"></div>
    <script type="text/javascript" data-lets-plot-script="plot">
    
    (function() {
@@ -5678,7 +5682,7 @@ white-space: pre-wrap;
        };
    }
    
-   const containerDiv = document.getElementById("dLQEqV");
+   const containerDiv = document.getElementById("8dlb5T");
    let fig = null;
    
    function renderPlot() {
@@ -5787,7 +5791,7 @@ white-space: pre-wrap;
 <section id="questiontask-4" class="level2">
 <h2 class="anchored" data-anchor-id="questiontask-4">QUESTION|TASK 4</h2>
 <p><strong>In the most recent year of data, what was the most common female name in Utah?</strong></p>
-<div id="d8d81786" class="cell" data-execution_count="9">
+<div id="ef41f8ec" class="cell" data-execution_count="9">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># names_year is a wide table with no sex-by-year column.</span></span>

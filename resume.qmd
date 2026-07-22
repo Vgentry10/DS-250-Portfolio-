@@ -1,0 +1,86 @@
+---
+title: "Resume"
+author: "Vincent Gentry"
+format:
+  html:
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 2
+    toc-location: left
+---
+
+## Contact
+
+| | |
+|---|---|
+| **Email** | your.email@example.com |
+| **LinkedIn** | linkedin.com/in/yourprofile |
+| **GitHub** | github.com/Vgentry10 |
+| **Location** | City, State |
+
+---
+
+## Education
+
+**Bachelor of Science — [Your Major]**  
+Brigham Young University – Idaho | Expected Graduation: [Month Year]  
+GPA: [X.XX]
+
+Relevant Coursework: DS 250 (Data Science Programming), [Other courses]
+
+---
+
+## Skills
+
+**Programming Languages:** Python, SQL  
+**Libraries & Tools:** Pandas, Polars, NumPy, Scikit-learn, lets-plot, Jupyter, Quarto  
+**Data Skills:** Data wrangling, exploratory analysis, machine learning, data visualization  
+**Other:** Git/GitHub, VS Code, Microsoft Office
+
+---
+
+## Projects
+
+### DS 250 Portfolio — Data Science Programming
+*BYU-Idaho | [Semester Year]*
+
+- Completed 5 units of data science projects using Python, Pandas, and machine learning
+- Built predictive models using Random Forest and Decision Tree classifiers (scikit-learn)
+- Analyzed the Star Wars Survey dataset; cleaned and visualized results to draw insights
+- Created a public portfolio website using Quarto and GitHub Pages: [vgentry10.github.io/DS-250-Portfolio-](https://vgentry10.github.io/DS-250-Portfolio-/)
+
+### [Project Name]
+*[Context/Class] | [Date]*
+
+- [Brief description of what you built or analyzed]
+- [Tools used, results achieved]
+
+---
+
+## Work Experience
+
+**[Job Title]**  
+[Company Name] | [City, State] | [Start Date] – [End Date]
+
+- [Key responsibility or accomplishment]
+- [Key responsibility or accomplishment]
+
+**[Job Title]**  
+[Company Name] | [City, State] | [Start Date] – [End Date]
+
+- [Key responsibility or accomplishment]
+- [Key responsibility or accomplishment]
+
+---
+
+## Certifications & Community
+
+- [Certification Name] — [Issuer], [Year]
+- [DS Community Activity or Club]
+
+---
+
+## About Me
+
+[Write 2–3 sentences about yourself, your interests, and your career goals in data science.]

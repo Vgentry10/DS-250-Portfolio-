@@ -4177,6 +4177,10 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   </li>  
     </ul>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../resume.html"> 
+<span class="menu-text">Resume</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -4227,7 +4231,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   <li><a href="#question-2" id="toc-question-2">QUESTION 2</a></li>
   </ul>
 </nav>
-<div id="4027b66f" class="cell" data-execution_count="1">
+<div id="57610c30" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
@@ -4242,7 +4246,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <p><strong>Identify the top 10 players with the longest Major League Baseball careers.</strong></p>
 <p>To figure out how long each player’s career was, I used the <code>appearances</code> table since it has a row for every season a player showed up. I grouped by <code>playerID</code> and found the earliest and latest year they played, then just subtracted to get the career length. I also added 1 so that a player who only played in one year still shows up as 1 instead of 0. Then I joined in the <code>people</code> table to get their actual names.</p>
 <p>Looking at the results, it’s cool to see how long some of these guys played. A lot of the top careers belong to pitchers, which I didn’t really expect. Nolan Ryan had the longest career in the data at 27 seasons, which is pretty incredible.</p>
-<div id="f7f849a0" class="cell" data-execution_count="2">
+<div id="06aaa4b2" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>people <span class="op">=</span> pl.read_database(</span>
@@ -4336,6 +4340,18 @@ white-space: pre-wrap;
 <td>29</td>
 </tr>
 <tr class="odd">
+<td>&quot;eversjo01&quot;</td>
+<td>&quot;Johnny&quot;</td>
+<td>&quot;Evers&quot;</td>
+<td>28</td>
+</tr>
+<tr class="even">
+<td>&quot;jennihu01&quot;</td>
+<td>&quot;Hughie&quot;</td>
+<td>&quot;Jennings&quot;</td>
+<td>28</td>
+</tr>
+<tr class="odd">
 <td>&quot;streega01&quot;</td>
 <td>&quot;Gabby&quot;</td>
 <td>&quot;Street&quot;</td>
@@ -4345,18 +4361,6 @@ white-space: pre-wrap;
 <td>&quot;ryanno01&quot;</td>
 <td>&quot;Nolan&quot;</td>
 <td>&quot;Ryan&quot;</td>
-<td>28</td>
-</tr>
-<tr class="odd">
-<td>&quot;jennihu01&quot;</td>
-<td>&quot;Hughie&quot;</td>
-<td>&quot;Jennings&quot;</td>
-<td>28</td>
-</tr>
-<tr class="even">
-<td>&quot;eversjo01&quot;</td>
-<td>&quot;Johnny&quot;</td>
-<td>&quot;Evers&quot;</td>
 <td>28</td>
 </tr>
 </tbody>
@@ -4370,7 +4374,7 @@ white-space: pre-wrap;
 <p><strong>Show the average salary for each position, including total players and highest salary. Label salaries as High, Medium, or Low.</strong></p>
 <p><strong>How I handled players at multiple positions in a single year:</strong><br>
 One tricky part was that some players play more than one position in the same season, but they only have one salary. I didn’t want to count that salary multiple times or just pick randomly, so I decided to go with whichever position they played the most games at. That way the salary gets counted toward the position they spent the most time at, which feels like the most fair way to do it. I sorted the fielding table by games played and then grabbed the first row for each player-year to get their main position.</p>
-<div id="717a452e" class="cell" data-execution_count="3">
+<div id="2df169f0" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fielding <span class="op">=</span> pl.read_database(</span>

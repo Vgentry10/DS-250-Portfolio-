@@ -4177,6 +4177,10 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   </li>  
     </ul>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../resume.html"> 
+<span class="menu-text">Resume</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -4228,7 +4232,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   <li><a href="#question-3-domain-count-table" id="toc-question-3-domain-count-table">Question 3 — Domain Count Table</a></li>
   </ul>
 </nav>
-<div id="1b138441" class="cell" data-execution_count="1">
+<div id="11d771fe" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
@@ -4250,7 +4254,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <li>Read row 12 (the second header row) and cleaned that up too and stored as series <code>b</code>.</li>
 <li>Glued <code>a + b</code> together to make the final column names, then read the actual data starting at row 13.</li>
 </ol>
-<div id="229de1b6" class="cell" data-execution_count="2">
+<div id="bb97fa1f" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1 — Read and clean the first header row </span></span>
@@ -4281,7 +4285,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>a[<span class="dv">33</span>] <span class="op">=</span> <span class="st">&quot;star_trek_fan&quot;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="2cf8a122" class="cell" data-execution_count="3">
+<div id="a5d94781" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2 — Read and clean the second header row </span></span>
@@ -4298,7 +4302,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="3907ef5b" class="cell" data-execution_count="4">
+<div id="a5a48e91" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3 — Combine headers and load the data</span></span>
@@ -4546,7 +4550,7 @@ white-space: pre-wrap;
 <section id="question-2-extract-names-from-the-email-column" class="level2">
 <h2 class="anchored" data-anchor-id="question-2-extract-names-from-the-email-column">Question 2 — Extract Names from the Email Column</h2>
 <p>This one was actually pretty cool once I figured out regex. The emails have people’s names baked into them (like <code>john.smith@gmail.com</code> or <code>jane_doe@yahoo.com</code>), just separated by a <code>.</code> or <code>_</code> before the <code>@</code>. So I used three regex patterns to pick out the first name, last name, and domain from each email. It’s basically just telling Python “grab everything before the separator, everything between the separator and the @, and everything after the @.”</p>
-<div id="f8af1328" class="cell" data-execution_count="5">
+<div id="f08a8b6d" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Q2: Extract first name, last name, and email domain using regex</span></span>
@@ -4629,7 +4633,7 @@ white-space: pre-wrap;
 <section id="question-3-domain-count-table" class="level2">
 <h2 class="anchored" data-anchor-id="question-3-domain-count-table">Question 3 — Domain Count Table</h2>
 <p>For this one I just needed to count how many people used each email domain. One small gotcha was that some domains were capitalized inconsistently (like <code>Gmail.com</code> vs <code>gmail.com</code>), so I converted everything to lowercase first before grouping. That way they all get counted together instead of as separate domains.</p>
-<div id="877bdd15" class="cell" data-execution_count="6">
+<div id="83f8b94f" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Q3: Count respondents per email domain (case-insensitive)</span></span>

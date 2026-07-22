@@ -123,7 +123,7 @@
     "href": "Unit 3/unit3_task4_template.html#question-1",
     "title": "Client Report - Baseball Relationships",
     "section": "QUESTION 1",
-    "text": "QUESTION 1\nIdentify the top 10 players with the longest Major League Baseball careers.\nTo figure out how long each player’s career was, I used the appearances table since it has a row for every season a player showed up. I grouped by playerID and found the earliest and latest year they played, then just subtracted to get the career length. I also added 1 so that a player who only played in one year still shows up as 1 instead of 0. Then I joined in the people table to get their actual names.\nLooking at the results, it’s cool to see how long some of these guys played. A lot of the top careers belong to pitchers, which I didn’t really expect. Nolan Ryan had the longest career in the data at 27 seasons, which is pretty incredible.\n\n\nShow the code\npeople = pl.read_database(\n    \"SELECT playerID, nameFirst, nameLast FROM people\",\n    con\n)\n\nappearances = pl.read_database(\n    \"SELECT playerID, yearID FROM appearances\",\n    con\n)\n\ntop10_careers = (\n    appearances\n    .group_by(\"playerID\")\n    .agg([\n        pl.min(\"yearID\").alias(\"start_year\"),\n        pl.max(\"yearID\").alias(\"end_year\"),\n    ])\n    .with_columns(\n        (pl.col(\"end_year\") - pl.col(\"start_year\") + 1).alias(\"career_length\")\n    )\n    .join(people, on=\"playerID\", how=\"left\")\n    .rename({\"nameFirst\": \"first_name\", \"nameLast\": \"last_name\"})\n    .select([\"playerID\", \"first_name\", \"last_name\", \"career_length\"])\n    .sort(\"career_length\", descending=True)\n    .head(10)\n)\n\ntop10_careers\n\n\n\nshape: (10, 4)\n\n\n\nplayerID\nfirst_name\nlast_name\ncareer_length\n\n\nstr\nstr\nstr\ni64\n\n\n\n\n\"altroni01\"\n\"Nick\"\n\"Altrock\"\n36\n\n\n\"orourji01\"\n\"Jim\"\n\"O'Rourke\"\n33\n\n\n\"minosmi01\"\n\"Minnie\"\n\"Minoso\"\n32\n\n\n\"olearch01\"\n\"Charley\"\n\"O'Leary\"\n31\n\n\n\"lathaar01\"\n\"Arlie\"\n\"Latham\"\n30\n\n\n\"mcguide01\"\n\"Deacon\"\n\"McGuire\"\n29\n\n\n\"streega01\"\n\"Gabby\"\n\"Street\"\n28\n\n\n\"ryanno01\"\n\"Nolan\"\n\"Ryan\"\n28\n\n\n\"jennihu01\"\n\"Hughie\"\n\"Jennings\"\n28\n\n\n\"eversjo01\"\n\"Johnny\"\n\"Evers\"\n28"
+    "text": "QUESTION 1\nIdentify the top 10 players with the longest Major League Baseball careers.\nTo figure out how long each player’s career was, I used the appearances table since it has a row for every season a player showed up. I grouped by playerID and found the earliest and latest year they played, then just subtracted to get the career length. I also added 1 so that a player who only played in one year still shows up as 1 instead of 0. Then I joined in the people table to get their actual names.\nLooking at the results, it’s cool to see how long some of these guys played. A lot of the top careers belong to pitchers, which I didn’t really expect. Nolan Ryan had the longest career in the data at 27 seasons, which is pretty incredible.\n\n\nShow the code\npeople = pl.read_database(\n    \"SELECT playerID, nameFirst, nameLast FROM people\",\n    con\n)\n\nappearances = pl.read_database(\n    \"SELECT playerID, yearID FROM appearances\",\n    con\n)\n\ntop10_careers = (\n    appearances\n    .group_by(\"playerID\")\n    .agg([\n        pl.min(\"yearID\").alias(\"start_year\"),\n        pl.max(\"yearID\").alias(\"end_year\"),\n    ])\n    .with_columns(\n        (pl.col(\"end_year\") - pl.col(\"start_year\") + 1).alias(\"career_length\")\n    )\n    .join(people, on=\"playerID\", how=\"left\")\n    .rename({\"nameFirst\": \"first_name\", \"nameLast\": \"last_name\"})\n    .select([\"playerID\", \"first_name\", \"last_name\", \"career_length\"])\n    .sort(\"career_length\", descending=True)\n    .head(10)\n)\n\ntop10_careers\n\n\n\nshape: (10, 4)\n\n\n\nplayerID\nfirst_name\nlast_name\ncareer_length\n\n\nstr\nstr\nstr\ni64\n\n\n\n\n\"altroni01\"\n\"Nick\"\n\"Altrock\"\n36\n\n\n\"orourji01\"\n\"Jim\"\n\"O'Rourke\"\n33\n\n\n\"minosmi01\"\n\"Minnie\"\n\"Minoso\"\n32\n\n\n\"olearch01\"\n\"Charley\"\n\"O'Leary\"\n31\n\n\n\"lathaar01\"\n\"Arlie\"\n\"Latham\"\n30\n\n\n\"mcguide01\"\n\"Deacon\"\n\"McGuire\"\n29\n\n\n\"eversjo01\"\n\"Johnny\"\n\"Evers\"\n28\n\n\n\"jennihu01\"\n\"Hughie\"\n\"Jennings\"\n28\n\n\n\"streega01\"\n\"Gabby\"\n\"Street\"\n28\n\n\n\"ryanno01\"\n\"Nolan\"\n\"Ryan\"\n28"
   },
   {
     "objectID": "Unit 3/unit3_task4_template.html#question-2",
@@ -287,25 +287,60 @@
     "text": "QUESTION|TASK 4\nIn the most recent year of data, what was the most common female name in Utah?\n\n\nShow the code\n# names_year is a wide table with no sex-by-year column.\n# Estimate female Utah counts using prob_female from names_prob.\nmost_recent_year = names_year.select(pl.col(\"year\").max()).item()\n\nutah_female_est = (\n    names_year\n    .filter((pl.col(\"year\") == most_recent_year) & pl.col(\"UT\").is_not_null())\n    .select([\"name\", \"UT\"])\n    .join(\n        names_prob.select([\"name\", \"prob_female\"]),\n        on=\"name\",\n        how=\"left\"\n    )\n    .with_columns(\n        (pl.col(\"UT\") * pl.col(\"prob_female\").fill_null(0.0)).alias(\"estimated_female_ut\")\n    )\n    .sort(\"estimated_female_ut\", descending=True)\n    .select([\"name\", \"estimated_female_ut\"])\n    .head(10)\n)\n\ntop_female_name_ut = utah_female_est.row(0)[0]\ntop_female_count_ut = utah_female_est.row(0)[1]\n\nprint(f\"Most recent year in data: {most_recent_year}\")\nprint(f\"Top female name in Utah (estimated): {top_female_name_ut} ({top_female_count_ut:,.0f})\")\nutah_female_est\n\n\nMost recent year in data: 2015\nTop female name in Utah (estimated): Emma (280)\n\n\n\nshape: (10, 2)\n\n\n\nname\nestimated_female_ut\n\n\nstr\nf64\n\n\n\n\n\"Emma\"\n280.277078\n\n\n\"Olivia\"\n276.532248\n\n\n\"Charlotte\"\n191.604649\n\n\n\"Evelyn\"\n159.464025\n\n\n\"Ava\"\n151.813018\n\n\n\"Hazel\"\n150.369724\n\n\n\"Sophia\"\n144.816634\n\n\n\"Amelia\"\n142.825051\n\n\n\"Lucy\"\n140.538244\n\n\n\"Scarlett\"\n138.958529\n\n\n\n\n\n\nIn 2015, the most common female name in Utah was estimated to be Emma, with about 280 babies."
   },
   {
-    "objectID": "mid_letter.html",
-    "href": "mid_letter.html",
-    "title": "Course Goals Letter (Mid)",
+    "objectID": "resume.html",
+    "href": "resume.html",
+    "title": "Resume",
     "section": "",
-    "text": "Instructions: Review the grading tier tables below. The first table in each section shows where you should be right now (Week 7) to stay on track. The second table shows where you need to be by Week 14.\n\nAction Required: Keep the table pair(s) that match your current performance or future goals, and delete the rest. Feel free to mix and match (e.g., if you are currently performing at a B level but aiming for an A by the end of the semester). Please provide an honest assessment!\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nLeader\nA\n7-9\n&gt;= 1\n&gt;= 1\n3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nLeader\nA\n17–18\n&gt;= 3\n&gt;= 3 (incl. Cert)\n6\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nSupporter\nB\n5-7\n&gt;= 1\n&gt;= 1\n2–3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nSupporter\nB\n15–16\n&gt;= 2\n&gt;= 2 (incl. Cert)\n5\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nListener\nC\n3-4\n&gt;= 1\n&gt;= 1\n1–2\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nListener\nC\n13–14\n&gt;= 1\n&gt;= 1\n3\n&gt;= 2\n1\n\n\n\n\n\n\n\n\n\n\n\nOriginal Goal: I am aiming for an A grade for my goal this semester.\nCurrent Status: I am on my way to completing this goal, I need to finsih some stetch tasks, and redue some core tasks, but I should be able to fulfill the requirements for my grade.\n\n\n\n\n(Please verify these numbers against your current gradebook status) * Tasks Completed: 7 * Stretch Tasks Completed: 2 * Methods & Calculations Quizzes (at 100%): 3\n\n\n\nI have learned to give mock interviews and revise my resume to make it more professional looking to my employers ### Looking Forward (Action Plan) I just need to stay on top of my assingments and redue the ones that I need to work on so I can atleast get some credit from those. I want to manage my tasks better so I can have more time to work on the assignments that are more of a struggle for me."
+    "text": "Email\nyour.email@example.com\n\n\nLinkedIn\nlinkedin.com/in/yourprofile\n\n\nGitHub\ngithub.com/Vgentry10\n\n\nLocation\nCity, State"
   },
   {
-    "objectID": "mid_letter.html#grading-tiers",
-    "href": "mid_letter.html#grading-tiers",
-    "title": "Course Goals Letter (Mid)",
+    "objectID": "resume.html#contact",
+    "href": "resume.html#contact",
+    "title": "Resume",
     "section": "",
-    "text": "Where I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nLeader\nA\n7-9\n&gt;= 1\n&gt;= 1\n3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nLeader\nA\n17–18\n&gt;= 3\n&gt;= 3 (incl. Cert)\n6\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nSupporter\nB\n5-7\n&gt;= 1\n&gt;= 1\n2–3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nSupporter\nB\n15–16\n&gt;= 2\n&gt;= 2 (incl. Cert)\n5\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nListener\nC\n3-4\n&gt;= 1\n&gt;= 1\n1–2\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nListener\nC\n13–14\n&gt;= 1\n&gt;= 1\n3\n&gt;= 2\n1"
+    "text": "Email\nyour.email@example.com\n\n\nLinkedIn\nlinkedin.com/in/yourprofile\n\n\nGitHub\ngithub.com/Vgentry10\n\n\nLocation\nCity, State"
   },
   {
-    "objectID": "mid_letter.html#my-letter",
-    "href": "mid_letter.html#my-letter",
-    "title": "Course Goals Letter (Mid)",
-    "section": "",
-    "text": "Original Goal: I am aiming for an A grade for my goal this semester.\nCurrent Status: I am on my way to completing this goal, I need to finsih some stetch tasks, and redue some core tasks, but I should be able to fulfill the requirements for my grade.\n\n\n\n\n(Please verify these numbers against your current gradebook status) * Tasks Completed: 7 * Stretch Tasks Completed: 2 * Methods & Calculations Quizzes (at 100%): 3\n\n\n\nI have learned to give mock interviews and revise my resume to make it more professional looking to my employers ### Looking Forward (Action Plan) I just need to stay on top of my assingments and redue the ones that I need to work on so I can atleast get some credit from those. I want to manage my tasks better so I can have more time to work on the assignments that are more of a struggle for me."
+    "objectID": "resume.html#education",
+    "href": "resume.html#education",
+    "title": "Resume",
+    "section": "Education",
+    "text": "Education\nBachelor of Science — [Your Major]\nBrigham Young University – Idaho | Expected Graduation: [Month Year]\nGPA: [X.XX]\nRelevant Coursework: DS 250 (Data Science Programming), [Other courses]"
+  },
+  {
+    "objectID": "resume.html#skills",
+    "href": "resume.html#skills",
+    "title": "Resume",
+    "section": "Skills",
+    "text": "Skills\nProgramming Languages: Python, SQL\nLibraries & Tools: Pandas, Polars, NumPy, Scikit-learn, lets-plot, Jupyter, Quarto\nData Skills: Data wrangling, exploratory analysis, machine learning, data visualization\nOther: Git/GitHub, VS Code, Microsoft Office"
+  },
+  {
+    "objectID": "resume.html#projects",
+    "href": "resume.html#projects",
+    "title": "Resume",
+    "section": "Projects",
+    "text": "Projects\n\nDS 250 Portfolio — Data Science Programming\nBYU-Idaho | [Semester Year]\n\nCompleted 5 units of data science projects using Python, Pandas, and machine learning\nBuilt predictive models using Random Forest and Decision Tree classifiers (scikit-learn)\nAnalyzed the Star Wars Survey dataset; cleaned and visualized results to draw insights\nCreated a public portfolio website using Quarto and GitHub Pages: vgentry10.github.io/DS-250-Portfolio-\n\n\n\n[Project Name]\n[Context/Class] | [Date]\n\n[Brief description of what you built or analyzed]\n[Tools used, results achieved]"
+  },
+  {
+    "objectID": "resume.html#work-experience",
+    "href": "resume.html#work-experience",
+    "title": "Resume",
+    "section": "Work Experience",
+    "text": "Work Experience\n[Job Title]\n[Company Name] | [City, State] | [Start Date] – [End Date]\n\n[Key responsibility or accomplishment]\n[Key responsibility or accomplishment]\n\n[Job Title]\n[Company Name] | [City, State] | [Start Date] – [End Date]\n\n[Key responsibility or accomplishment]\n[Key responsibility or accomplishment]"
+  },
+  {
+    "objectID": "resume.html#certifications-community",
+    "href": "resume.html#certifications-community",
+    "title": "Resume",
+    "section": "Certifications & Community",
+    "text": "Certifications & Community\n\n[Certification Name] — [Issuer], [Year]\n[DS Community Activity or Club]"
+  },
+  {
+    "objectID": "resume.html#about-me",
+    "href": "resume.html#about-me",
+    "title": "Resume",
+    "section": "About Me",
+    "text": "About Me\n[Write 2–3 sentences about yourself, your interests, and your career goals in data science.]"
   },
   {
     "objectID": "index.html",
@@ -327,6 +362,27 @@
     "title": "DS 250 Portfolio",
     "section": "Portfolio Contents",
     "text": "Portfolio Contents\n\n\n\nSection\nDescription\n\n\n\n\nGoals Letter\nMid-course reflection on learning targets\n\n\nUnit 1\nIntroduction to Python, Pandas, and data visualization\n\n\nUnit 2\nData wrangling and exploratory analysis\n\n\nUnit 3\nAdvanced visualizations and statistical summaries\n\n\nUnit 4\nMachine learning and predictive models\n\n\nUnit 5\nStar Wars Survey analysis"
+  },
+  {
+    "objectID": "mid_letter.html",
+    "href": "mid_letter.html",
+    "title": "Course Goals Letter (Mid)",
+    "section": "",
+    "text": "Instructions: Review the grading tier tables below. The first table in each section shows where you should be right now (Week 7) to stay on track. The second table shows where you need to be by Week 14.\n\nAction Required: Keep the table pair(s) that match your current performance or future goals, and delete the rest. Feel free to mix and match (e.g., if you are currently performing at a B level but aiming for an A by the end of the semester). Please provide an honest assessment!\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nLeader\nA\n7-9\n&gt;= 1\n&gt;= 1\n3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nLeader\nA\n17–18\n&gt;= 3\n&gt;= 3 (incl. Cert)\n6\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nSupporter\nB\n5-7\n&gt;= 1\n&gt;= 1\n2–3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nSupporter\nB\n15–16\n&gt;= 2\n&gt;= 2 (incl. Cert)\n5\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nListener\nC\n3-4\n&gt;= 1\n&gt;= 1\n1–2\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nListener\nC\n13–14\n&gt;= 1\n&gt;= 1\n3\n&gt;= 2\n1\n\n\n\n\n\n\n\n\n\n\n\nOriginal Goal: I am aiming for an A grade for my goal this semester.\nCurrent Status: I am on my way to completing this goal, I need to finsih some stetch tasks, and redue some core tasks, but I should be able to fulfill the requirements for my grade.\n\n\n\n\n(Please verify these numbers against your current gradebook status) * Tasks Completed: 7 * Stretch Tasks Completed: 2 * Methods & Calculations Quizzes (at 100%): 3\n\n\n\nI have learned to give mock interviews and revise my resume to make it more professional looking to my employers ### Looking Forward (Action Plan) I just need to stay on top of my assingments and redue the ones that I need to work on so I can atleast get some credit from those. I want to manage my tasks better so I can have more time to work on the assignments that are more of a struggle for me."
+  },
+  {
+    "objectID": "mid_letter.html#grading-tiers",
+    "href": "mid_letter.html#grading-tiers",
+    "title": "Course Goals Letter (Mid)",
+    "section": "",
+    "text": "Where I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nLeader\nA\n7-9\n&gt;= 1\n&gt;= 1\n3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nLeader\nA\n17–18\n&gt;= 3\n&gt;= 3 (incl. Cert)\n6\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nSupporter\nB\n5-7\n&gt;= 1\n&gt;= 1\n2–3\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nSupporter\nB\n15–16\n&gt;= 2\n&gt;= 2 (incl. Cert)\n5\n&gt;= 3\n1\n\n\n\n\n\n\n\nWhere I am right now (Week 7):\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks Completed\nStretches\nDS Community Tasks\nMethods & Calculations @ 100%\nCoding Challenge\nCourse Goals Letter (Mid)\n\n\n\n\nListener\nC\n3-4\n&gt;= 1\n&gt;= 1\n1–2\nN/A\n1\n\n\n\nWhere I need to be by Week 14:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGrade\nTasks (18 Total)\nStretch Tasks (5)\nDS Community Tasks\nMethods & Calculation Quizzes @ 100%\nCoding Challenge\nCourse Goal Letter (End)\n\n\n\n\nListener\nC\n13–14\n&gt;= 1\n&gt;= 1\n3\n&gt;= 2\n1"
+  },
+  {
+    "objectID": "mid_letter.html#my-letter",
+    "href": "mid_letter.html#my-letter",
+    "title": "Course Goals Letter (Mid)",
+    "section": "",
+    "text": "Original Goal: I am aiming for an A grade for my goal this semester.\nCurrent Status: I am on my way to completing this goal, I need to finsih some stetch tasks, and redue some core tasks, but I should be able to fulfill the requirements for my grade.\n\n\n\n\n(Please verify these numbers against your current gradebook status) * Tasks Completed: 7 * Stretch Tasks Completed: 2 * Methods & Calculations Quizzes (at 100%): 3\n\n\n\nI have learned to give mock interviews and revise my resume to make it more professional looking to my employers ### Looking Forward (Action Plan) I just need to stay on top of my assingments and redue the ones that I need to work on so I can atleast get some credit from those. I want to manage my tasks better so I can have more time to work on the assignments that are more of a struggle for me."
   },
   {
     "objectID": "Unit 1/P0_template.html",

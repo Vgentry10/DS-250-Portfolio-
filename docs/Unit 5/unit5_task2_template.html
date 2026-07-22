@@ -4177,6 +4177,10 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   </li>  
     </ul>
   </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../resume.html"> 
+<span class="menu-text">Resume</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -4234,7 +4238,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
   </ul></li>
   </ul>
 </nav>
-<div id="08b5ba22" class="cell" data-execution_count="1">
+<div id="90537278" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
@@ -4247,7 +4251,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>data_url <span class="op">=</span> <span class="st">&quot;https://byuidatascience.github.io/DS250-Course-Polars/Data/StarWars_with_emails.csv&quot;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="353e32fc" class="cell" data-execution_count="2">
+<div id="b0f3c585" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Rebuild column names (same logic as Task 1) ──────────────────────────────</span></span>
@@ -4303,7 +4307,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <section id="question-1-filter-to-respondents-who-have-seen-at-least-one-film" class="level2">
 <h2 class="anchored" data-anchor-id="question-1-filter-to-respondents-who-have-seen-at-least-one-film">Question 1: Filter to Respondents Who Have Seen at Least One Film</h2>
 <p>So the instructions specifically say NOT to use the <code>seen_any</code> column even though that sounds like exactly what you’d want. Instead, I’m looking at the six individual per-movie columns, one for each episode. If any of those are filled in, the person has seen at least one film and they stay in. If all six are null, they skipped the whole section which probably means they haven’t seen any, so they get dropped.</p>
-<div id="e9d55c81" class="cell" data-execution_count="3">
+<div id="e7a77e6b" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The six per-episode &quot;have you seen this film&quot; columns</span></span>
@@ -4418,7 +4422,7 @@ white-space: pre-wrap;
 <section id="a-age" class="level3">
 <h3 class="anchored" data-anchor-id="a-age">2a: Age</h3>
 <p>There are only four age buckets so this one’s pretty simple. I just picked the midpoint for each range. The last one <code>&quot;&gt; 60&quot;</code> is open-ended so there’s no real midpoint, so I went with 65 which seemed like a fair middle-of-the-road guess for that group.</p>
-<div id="009c9281" class="cell" data-execution_count="4">
+<div id="92d060ae" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>age_map <span class="op">=</span> {</span>
@@ -4445,7 +4449,7 @@ white-space: pre-wrap;
 <section id="b-education" class="level3">
 <h3 class="anchored" data-anchor-id="b-education">2b: Education</h3>
 <p>Education is a natural ladder from least to most schooling, so I’m just numbering the levels 1 through 5. No diploma at the bottom gets a 1, grad degree at the top gets a 5. Simple enough.</p>
-<div id="e6845928" class="cell" data-execution_count="5">
+<div id="cfc9df75" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>edu_map <span class="op">=</span> {</span>
@@ -4473,7 +4477,7 @@ white-space: pre-wrap;
 <section id="c-household-income" class="level3">
 <h3 class="anchored" data-anchor-id="c-household-income">2c: Household Income</h3>
 <p>Same idea as age, just use the midpoint of each bracket. The tricky one is <code>&quot;$150,000+&quot;</code> since it has no upper end. I went with $175,000 as a rough estimate. It’s not perfect but it’s better than leaving it as a string or just using 150,000 which would underrepresent that group.</p>
-<div id="b373f4e4" class="cell" data-execution_count="6">
+<div id="8f319cc9" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>income_map <span class="op">=</span> {</span>
@@ -4502,7 +4506,7 @@ white-space: pre-wrap;
 <h3 class="anchored" data-anchor-id="d-favorability-ratings">2d: Favorability Ratings</h3>
 <p>This one was actually kind of satisfying to figure out. There are 14 favorability columns (one per character), and they ALL use the exact same 6-level scale, so I don’t have to write the same map 14 times. I can just loop over all the columns that start with <code>fav_</code> and apply the same replacement to each one in a single pass.</p>
 <p>I set <code>&quot;Unfamiliar (N/A)&quot;</code> to 0 instead of null because “I don’t know who this is” is meaningfully different from hating someone. It seemed wrong to just drop those responses.</p>
-<div id="6748a2cd" class="cell" data-execution_count="7">
+<div id="9a39b689" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fav_map <span class="op">=</span> {</span>
@@ -4534,7 +4538,7 @@ Sample fav_num unique values: [0, 1, 2, 3, 4, 5]</code></pre>
 <section id="reformatted-data-excerpt" class="level3">
 <h3 class="anchored" data-anchor-id="reformatted-data-excerpt">Reformatted Data Excerpt</h3>
 <p>Here’s what the data looks like now after all four recoding steps. I picked a handful of the new numeric columns to show alongside <code>star_wars_fan</code> just so it’s clear what we’re working with.</p>
-<div id="ea88c8e8" class="cell" data-execution_count="8">
+<div id="bb46826c" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>Show the code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Show a selection of the new numeric columns</span></span>
